@@ -1,0 +1,237 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--grid-gap);
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.8rem;
+}
+
+.lead {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.note {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.heroGrid {
+  display: grid;
+  gap: var(--grid-gap);
+  grid-template-columns: 2fr 1fr;
+}
+
+@media (max-width: 1024px) {
+  .heroGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.boardRow {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.boardCards {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.6rem;
+  border-radius: 12px;
+  background: var(--surface-weak);
+  border: 1px dashed var(--border-normal);
+}
+
+.cardChip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.2rem;
+  height: 4rem;
+  border-radius: 10px;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--border-normal);
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.flowList {
+  display: grid;
+  gap: 0.4rem;
+  grid-template-columns: 1fr;
+  margin: 0;
+}
+
+.flowList dt {
+  font-weight: 700;
+  margin: 0;
+}
+
+.flowList dd {
+  margin: 0.1rem 0 0.6rem;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.actionStack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.inlineInfo {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(124, 159, 248, 0.15);
+  border: 1px solid rgba(124, 159, 248, 0.35);
+  color: #d9e5ff;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.actionBody {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.buttonRow {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: 1fr;
+}
+
+.hint {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.potGrid {
+  display: grid;
+  gap: var(--grid-gap);
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.potCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1rem;
+  border-radius: 12px;
+  background: var(--surface-weak);
+  border: 1px solid var(--border-normal);
+}
+
+.potHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.potLabel {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.potAmount {
+  margin: 0.1rem 0 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.potBadges {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  align-items: flex-end;
+}
+
+.potNote {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.winnerList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.winnerRow {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.5rem 0.6rem;
+  border-radius: 10px;
+  background: var(--surface-weak-hover);
+  border: 1px solid var(--border-normal);
+}
+
+.winnerRow:hover {
+  border-color: var(--border-strong);
+}
+
+.winnerRow input {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.playerInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.playerName {
+  font-weight: 700;
+}
+
+.playerMeta {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.eligibility {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.disabled {
+  opacity: 0.4;
+}
+
+.disabled .eligibility {
+  color: #9ca3af;
+}
