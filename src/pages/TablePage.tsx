@@ -3,6 +3,7 @@ import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { PlayerCard, type PlayerRole, type PlayerStatus } from '../components/PlayerCard';
 import { StatusBar } from '../components/StatusBar';
+import { TurnPanel } from '../components/TurnPanel';
 import styles from './TablePage.module.css';
 
 interface TablePageProps {
@@ -29,6 +30,14 @@ const players: PlayerStub[] = [
 
 export function TablePage({ description }: TablePageProps) {
   const turnPlayer = players.find((player) => player.id === 'p5');
+  const minRaiseDisplay = 1200;
+  const turnPlayerName = turnPlayer?.name ?? '—';
+  const requiredText = turnPlayer
+    ? `コール ${turnPlayer.needed.toLocaleString()}（継続）`
+    : 'コール 0（継続）';
+  const availableText = turnPlayer
+    ? `チェック / レイズは ${minRaiseDisplay.toLocaleString()} 以上 / オールイン ${turnPlayer.stack.toLocaleString()}`
+    : 'チェック / レイズ / オールイン';
 
   return (
     <div className={styles.page}>
@@ -87,26 +96,12 @@ export function TablePage({ description }: TablePageProps) {
           title="手番エリア"
           description="「手番 / 必要 / 可能」を3行で固定表示する領域です。ボタンとは分けて目視しやすくしています。"
         >
-          <div className={styles.turnPanel}>
-            <div className={styles.turnRow}>
-              <span className={styles.turnLabel}>手番</span>
-              <span className={styles.turnValue}>
-                {turnPlayer?.name ?? '—'} <span className={styles.subtle}>（UTG）</span>
-              </span>
-            </div>
-            <div className={styles.turnRow}>
-              <span className={styles.turnLabel}>必要</span>
-              <span className={styles.turnValue}>
-                コール {turnPlayer?.needed.toLocaleString()}（継続）
-              </span>
-            </div>
-            <div className={styles.turnRow}>
-              <span className={styles.turnLabel}>可能</span>
-              <span className={styles.turnValue}>
-                チェック / レイズは 1,200 以上 / オールイン {turnPlayer?.stack.toLocaleString()}
-              </span>
-            </div>
-          </div>
+          <TurnPanel
+            turnPlayer={turnPlayerName}
+            positionLabel="UTG"
+            requiredText={requiredText}
+            availableText={availableText}
+          />
         </Card>
       </div>
 
