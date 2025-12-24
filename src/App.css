@@ -1,0 +1,93 @@
+:root {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #e9ebf5;
+  background-color: #0f172a;
+  line-height: 1.5;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+.app {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 3rem;
+}
+
+.app__header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.app__logos {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.app__logo {
+  height: 3.5rem;
+  width: 3.5rem;
+  transition: transform 0.3s ease;
+}
+
+.app__logo.react {
+  filter: drop-shadow(0 0 0.6rem #61dafb);
+}
+
+.app__logo:hover {
+  transform: scale(1.05);
+}
+
+.app__title {
+  margin: 0;
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
+}
+
+.app__description {
+  margin: 0;
+  text-align: center;
+  color: #cbd5e1;
+}
+
+.app__main {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
+}
+
+.app__card {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.35);
+}
+
+.app__card h2 {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  font-size: 1.25rem;
+}
+
+.app__card ol {
+  padding-left: 1.2rem;
+  margin: 0;
+  color: #cbd5e1;
+}
+
+.app__card li + li {
+  margin-top: 0.4rem;
+}
+
+code {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.2rem 0.4rem;
+  border-radius: 6px;
+  font-size: 0.95em;
+}
