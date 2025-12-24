@@ -1,43 +1,69 @@
 import './App.css';
+import { ReactNode } from 'react';
+import { HashRouter, NavLink, Route, Routes } from 'react-router-dom';
+import reactLogo from './assets/react.svg';
 import { Button } from './components/Button';
 import { Card } from './components/Card';
-import reactLogo from './assets/react.svg';
+import { HomePage } from './pages/HomePage';
+import { LogPage } from './pages/LogPage';
+import { PayoutPage } from './pages/PayoutPage';
+import { SettingsPage } from './pages/SettingsPage';
+import { SetupPage } from './pages/SetupPage';
+import { ShowdownPage } from './pages/ShowdownPage';
+import { TablePage } from './pages/TablePage';
 import viteLogo from '/vite.svg';
-import { HashRouter, NavLink, Route, Routes } from 'react-router-dom';
 
-const pages = [
-  { path: '/', title: 'ホーム', description: 'アプリの概要と導線の起点になります。' },
+type PageInfo = {
+  path: string;
+  title: string;
+  description: string;
+  element: ReactNode;
+};
+
+const pages: PageInfo[] = [
+  {
+    path: '/',
+    title: 'ホーム',
+    description: 'アプリの概要と導線の起点になります。',
+    element: <HomePage description="アプリの概要と導線の起点になります。" />,
+  },
   {
     path: '/setup',
     title: 'セットアップ',
     description: 'プレイヤーや設定の編集を行うページの予定地です。',
+    element: <SetupPage description="プレイヤーや設定の編集を行うページの予定地です。" />,
   },
   {
     path: '/table',
     title: 'テーブル',
     description: '進行中のハンドを表示するメインビューの予定地です。',
+    element: <TablePage description="進行中のハンドを表示するメインビューの予定地です。" />,
   },
   {
     path: '/showdown',
     title: 'ショーダウン',
     description: '役比較や勝者選択を行う画面の予定地です。',
+    element: <ShowdownPage description="役比較や勝者選択を行う画面の予定地です。" />,
   },
-  { path: '/payout', title: '配当結果', description: '配当結果を確認するための画面の予定地です。' },
-  { path: '/log', title: 'ログ', description: 'アクション履歴を一覧する画面の予定地です。' },
-  { path: '/settings', title: '設定', description: '保存/復元や表示設定を扱う画面の予定地です。' },
+  {
+    path: '/payout',
+    title: '配当結果',
+    description: '配当結果を確認するための画面の予定地です。',
+    element: <PayoutPage description="配当結果を確認するための画面の予定地です。" />,
+  },
+  {
+    path: '/log',
+    title: 'ログ',
+    description: 'アクション履歴を一覧する画面の予定地です。',
+    element: <LogPage description="アクション履歴を一覧する画面の予定地です。" />,
+  },
+  {
+    path: '/settings',
+    title: '設定',
+    description: '保存/復元や表示設定を扱う画面の予定地です。',
+    element: <SettingsPage description="保存/復元や表示設定を扱う画面の予定地です。" />,
+  },
 ];
-
-type PageInfo = (typeof pages)[number];
-
-function PagePlaceholder({ title, description, path }: PageInfo) {
-  return (
-    <Card eyebrow={path} title={title} description={description}>
-      <p className="app__hint">
-        実装前のプレースホルダーです。HashRouter で直接アクセス/リロードしても 404 になりません。
-      </p>
-    </Card>
-  );
-}
 
 function App() {
   return (
@@ -131,7 +157,7 @@ function App() {
 
             <Routes>
               {pages.map((page) => (
-                <Route key={page.path} path={page.path} element={<PagePlaceholder {...page} />} />
+                <Route key={page.path} path={page.path} element={page.element} />
               ))}
             </Routes>
           </section>
