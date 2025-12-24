@@ -14,7 +14,7 @@ export type ToastMessage = {
 
 interface ToastStackProps {
   toasts: ToastMessage[];
-  onClose: (id: string) => void;
+  onClose: (_id: string) => void;
 }
 
 export function ToastStack({ toasts, onClose }: ToastStackProps) {
