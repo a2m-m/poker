@@ -98,37 +98,6 @@
   color: var(--text-muted);
 }
 
-.turnPanel {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  padding: 0.75rem;
-  border-radius: 12px;
-  background: var(--surface-weak);
-  border: 1px dashed var(--border-normal);
-}
-
-.turnRow {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.5rem;
-  align-items: center;
-  font-size: 1rem;
-}
-
-.turnLabel {
-  color: var(--text-secondary);
-}
-
-.turnValue {
-  font-weight: 700;
-}
-
-.subtle {
-  color: var(--text-secondary);
-  font-weight: 600;
-}
-
 .mainGrid {
   display: grid;
   gap: var(--grid-gap);

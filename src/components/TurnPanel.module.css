@@ -1,0 +1,39 @@
+.turnPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.9rem;
+  border-radius: 12px;
+  background: var(--surface-weak);
+  border: 1px solid var(--border-normal);
+}
+
+.turnRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.label {
+  margin: 0.1rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+
+.value {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: right;
+  flex: 1;
+  word-break: break-word;
+}
+
+.note {
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-left: 0.3rem;
+}
