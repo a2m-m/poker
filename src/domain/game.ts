@@ -110,10 +110,11 @@ const buildInitialHandState = (
 };
 
 export const createNewGame = (settings: GameSettings, playerSetups: PlayerSetup[]): GameState => {
+  const { roundingRule = 'BUTTON_NEAR', burnCard = true, ...restSettings } = settings;
   const normalizedSettings: GameSettings = {
-    roundingRule: 'BUTTON_NEAR',
-    burnCard: true,
-    ...settings,
+    ...restSettings,
+    roundingRule,
+    burnCard,
   };
 
   const players = toPlayers(playerSetups);
