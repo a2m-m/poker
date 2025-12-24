@@ -1,28 +1,151 @@
-import { PageScaffold } from './PageScaffold';
+import { useState } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { Button } from '../components/Button';
+import { Card } from '../components/Card';
+import { ConfirmDialog } from '../components/ConfirmDialog';
+import styles from './HomePage.module.css';
 
 interface HomePageProps {
   description: string;
 }
 
 export function HomePage({ description }: HomePageProps) {
+  const navigate = useNavigate();
+  const [isResetDialogOpen, setResetDialogOpen] = useState(false);
+
+  const handleNewGame = () => {
+    navigate('/setup');
+  };
+
+  const handleResume = () => {
+    navigate('/table');
+  };
+
+  const handleResetRequest = () => {
+    setResetDialogOpen(true);
+  };
+
+  const handleResetConfirm = () => {
+    setResetDialogOpen(false);
+  };
+
+  const handleResetCancel = () => {
+    setResetDialogOpen(false);
+  };
+
   return (
-    <PageScaffold
-      path="/"
-      title="ホーム"
-      description={description}
-      summary="Poker Dealer App のルート入口です。セットアップやテーブル表示など、主要ページへの導線をまとめました。"
-      checkpoints={[
-        '「新規開始/再開/リセット」などトップの操作カードを配置する予定です。',
-        '進行中のゲームがあれば次の手番へ遷移できる導線を置きます。',
-        'デモ用のページリンクから各画面の骨組みを確認できます。',
-      ]}
-      links={[
-        { to: '/setup', label: 'セットアップへ進む' },
-        { to: '/table', label: 'テーブルを確認する' },
-        { to: '/settings', label: '設定に移動' },
-      ]}
-      includeHomeLink={false}
-      footnote="HashRouter で配信しているため、#/setup のように直接アクセス/リロードしても 404 になりません。"
-    />
+    <div className={styles.home}>
+      <div className={styles.heroRow}>
+        <Card
+          eyebrow="Start"
+          title="Poker Dealer App"
+          description={description}
+          className={styles.card}
+        >
+          <p className={styles.lead}>
+            「新規開始」「再開」「リセット」の 3 操作を起点に、セットアップやテーブル表示へ進むホーム画面です。
+            まだロジックは仮ですが、導線の位置とトーンを固定しておきます。
+          </p>
+          <div className={styles.actions}>
+            <Button variant="primary" block onClick={handleNewGame}>
+              新規ゲームを開始
+            </Button>
+            <Button variant="secondary" block onClick={handleResume}>
+              前回を再開（デモ）
+            </Button>
+            <Button variant="danger" block onClick={handleResetRequest}>
+              リセット（全削除）
+            </Button>
+          </div>
+          <p className={styles.note}>
+            クリック時の遷移や確認ダイアログのみを仕込んだ静的バージョンです。保存や破棄の実処理は後続タスクで実装します。
+          </p>
+        </Card>
+
+        <Card
+          eyebrow="Progress"
+          title="進行中のハンドに戻る"
+          description="保存データがある想定で、テーブルやログへ最短遷移できるショートカットをまとめています。"
+          className={styles.card}
+        >
+          <dl className={styles.metaList}>
+            <div>
+              <dt>ステータス</dt>
+              <dd className={styles.badge}>デモデータ</dd>
+            </div>
+            <div>
+              <dt>想定ハンド</dt>
+              <dd>#12 / リバー進行中</dd>
+            </div>
+            <div>
+              <dt>次の手番</dt>
+              <dd>プレイヤー: 佐藤</dd>
+            </div>
+          </dl>
+          <div className={styles.quickLinks} aria-label="進行中ハンドへの導線">
+            <NavLink to="/table" className={styles.navLink}>
+              テーブルに移動
+              <span className={styles.navHint}>手番の確認とアクション入力</span>
+            </NavLink>
+            <NavLink to="/log" className={styles.navLink}>
+              ログを確認
+              <span className={styles.navHint}>直近の操作履歴を一覧</span>
+            </NavLink>
+            <NavLink to="/showdown" className={styles.navLink}>
+              ショーダウンへ
+              <span className={styles.navHint}>勝者選択とサイドポット確認</span>
+            </NavLink>
+          </div>
+        </Card>
+      </div>
+
+      <Card
+        eyebrow="Demo"
+        title="ページ骨組みのショートカット"
+        description="各ページのモックに移動できます。HashRouter 配信のため、#/setup など直接入力でも安全にアクセスできます。"
+        className={styles.card}
+      >
+        <ul className={styles.pageList}>
+          <li>
+            <NavLink to="/setup" className={styles.pageLink}>
+              <span className={styles.pageTitle}>セットアップ</span>
+              <span className={styles.pageDescription}>プレイヤー編集とブラインド設定の予定地</span>
+            </NavLink>
+          </li>
+          <li>
+            <NavLink to="/table" className={styles.pageLink}>
+              <span className={styles.pageTitle}>テーブル</span>
+              <span className={styles.pageDescription}>進行中ハンドを表示するメインビュー</span>
+            </NavLink>
+          </li>
+          <li>
+            <NavLink to="/payout" className={styles.pageLink}>
+              <span className={styles.pageTitle}>配当結果</span>
+              <span className={styles.pageDescription}>サイドポット配当の結果確認</span>
+            </NavLink>
+          </li>
+          <li>
+            <NavLink to="/settings" className={styles.pageLink}>
+              <span className={styles.pageTitle}>設定</span>
+              <span className={styles.pageDescription}>保存/復元やリセット操作の入口</span>
+            </NavLink>
+          </li>
+        </ul>
+        <p className={styles.note}>
+          いずれも UI 骨組みのみのプレースホルダーです。ルーティングと導線のトーンを先に整え、後続タスクで中身を差し込みます。
+        </p>
+      </Card>
+
+      <ConfirmDialog
+        open={isResetDialogOpen}
+        title="保存データをリセットしますか？"
+        message="確認のみのダイアログです。実際の削除処理は後続タスクで実装予定です。"
+        confirmLabel="リセットする"
+        cancelLabel="やめておく"
+        tone="danger"
+        onConfirm={handleResetConfirm}
+        onCancel={handleResetCancel}
+      />
+    </div>
   );
 }
