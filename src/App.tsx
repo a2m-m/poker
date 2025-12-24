@@ -7,9 +7,21 @@ import { HashRouter, NavLink, Route, Routes } from 'react-router-dom';
 
 const pages = [
   { path: '/', title: 'ホーム', description: 'アプリの概要と導線の起点になります。' },
-  { path: '/setup', title: 'セットアップ', description: 'プレイヤーや設定の編集を行うページの予定地です。' },
-  { path: '/table', title: 'テーブル', description: '進行中のハンドを表示するメインビューの予定地です。' },
-  { path: '/showdown', title: 'ショーダウン', description: '役比較や勝者選択を行う画面の予定地です。' },
+  {
+    path: '/setup',
+    title: 'セットアップ',
+    description: 'プレイヤーや設定の編集を行うページの予定地です。',
+  },
+  {
+    path: '/table',
+    title: 'テーブル',
+    description: '進行中のハンドを表示するメインビューの予定地です。',
+  },
+  {
+    path: '/showdown',
+    title: 'ショーダウン',
+    description: '役比較や勝者選択を行う画面の予定地です。',
+  },
   { path: '/payout', title: '配当結果', description: '配当結果を確認するための画面の予定地です。' },
   { path: '/log', title: 'ログ', description: 'アクション履歴を一覧する画面の予定地です。' },
   { path: '/settings', title: '設定', description: '保存/復元や表示設定を扱う画面の予定地です。' },
@@ -42,8 +54,9 @@ function App() {
           </div>
           <h1 className="app__title">Poker Dealer App</h1>
           <p className="app__description">
-            GitHub Pages 配信を想定し、URL 直叩きやリロードでも 404 にならないよう HashRouter でルーティングしています。
-            UI は CSS Modules を前提に、カード/ボタン/余白の基準を整えました。
+            GitHub Pages 配信を想定し、URL 直叩きやリロードでも 404 にならないよう HashRouter
+            でルーティングしています。 UI は CSS Modules
+            を前提に、カード/ボタン/余白の基準を整えました。
           </p>
         </header>
 
@@ -72,7 +85,8 @@ function App() {
               ))}
             </ul>
             <p className="app__hint">
-              GitHub Pages のように 404 ハンドリングができない環境でも、#/table のようなハッシュ付き URL で安全に遷移できます。
+              GitHub Pages のように 404 ハンドリングができない環境でも、#/table のようなハッシュ付き
+              URL で安全に遷移できます。
             </p>
           </Card>
 
@@ -98,7 +112,8 @@ function App() {
                 <div className="app__demo-box">
                   <p className="app__eyebrow">カードと余白</p>
                   <p className="app__page-body">
-                    ダッシュボード風の余白と装飾を <code>Card</code> コンポーネントに集約しています。
+                    ダッシュボード風の余白と装飾を <code>Card</code>{' '}
+                    コンポーネントに集約しています。
                   </p>
                   <Button variant="primary" block>
                     主要アクション（block）
@@ -109,7 +124,8 @@ function App() {
                 </div>
               </div>
               <p className="app__hint">
-                ボタンの塗り/線/ゴーストと余白が揃っていれば、後続ページでも統一したトーンで UI を並べられます。
+                ボタンの塗り/線/ゴーストと余白が揃っていれば、後続ページでも統一したトーンで UI
+                を並べられます。
               </p>
             </Card>
 

@@ -79,7 +79,10 @@
   border-radius: 12px;
   padding: 0.85rem 0.95rem;
   background: var(--surface-weak);
-  transition: border-color 0.2s ease, transform 0.2s ease, background 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease,
+    background 0.2s ease;
 }
 
 .app__nav-link:hover {
@@ -90,7 +93,9 @@
 
 .app__nav-link--active {
   border-color: var(--accent);
-  box-shadow: 0 0 0 1px rgba(124, 159, 248, 0.5), 0 16px 30px rgba(124, 159, 248, 0.18);
+  box-shadow:
+    0 0 0 1px rgba(124, 159, 248, 0.5),
+    0 16px 30px rgba(124, 159, 248, 0.18);
 }
 
 .app__nav-title {
