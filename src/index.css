@@ -1,11 +1,5 @@
-* {
-  box-sizing: border-box;
-}
+@import './styles/theme.css';
 
-a {
-  color: inherit;
-}
-
-a:hover {
-  color: #c0dafe;
+#root {
+  min-height: 100vh;
 }
