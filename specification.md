@@ -1,6 +1,6 @@
 ⑤ 仕様書（統合版）
 
-対象：rulebook.md / ②specs.md / ③design.md / components.md
+対象：rulebook.md / specs.md / design.md / components.md
 目的：この仕様書を拠り所に、後続の「AIコーディング用タスクリスト」を切れる状態にする
 
 ⸻
