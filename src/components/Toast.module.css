@@ -1,0 +1,71 @@
+.stack {
+  position: fixed;
+  inset: auto 1.25rem 1.25rem auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-width: min(420px, 90vw);
+  z-index: 25;
+}
+
+.toast {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.35rem 0.75rem;
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--border-normal);
+  background: var(--surface-weak);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.32);
+}
+
+.title {
+  margin: 0;
+  font-weight: 700;
+}
+
+.description {
+  margin: 0;
+  color: var(--text-secondary);
+  grid-column: 1 / -1;
+}
+
+.actions {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.closeButton {
+  border: none;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+}
+
+.closeButton:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.info {
+  border-color: rgba(124, 159, 248, 0.4);
+  background: linear-gradient(135deg, rgba(124, 159, 248, 0.25), rgba(124, 159, 248, 0.05));
+}
+
+.success {
+  border-color: rgba(105, 234, 203, 0.45);
+  background: linear-gradient(135deg, rgba(105, 234, 203, 0.26), rgba(105, 234, 203, 0.06));
+}
+
+.warning {
+  border-color: rgba(255, 217, 102, 0.5);
+  background: linear-gradient(135deg, rgba(255, 217, 102, 0.28), rgba(255, 217, 102, 0.08));
+}
+
+.danger {
+  border-color: rgba(255, 124, 124, 0.5);
+  background: linear-gradient(135deg, rgba(255, 124, 124, 0.28), rgba(255, 124, 124, 0.08));
+}

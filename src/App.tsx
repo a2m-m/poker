@@ -1,9 +1,11 @@
 import './App.css';
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import { HashRouter, NavLink, Route, Routes } from 'react-router-dom';
 import reactLogo from './assets/react.svg';
 import { Button } from './components/Button';
 import { Card } from './components/Card';
+import { ConfirmDialog } from './components/ConfirmDialog';
+import { ToastMessage, ToastStack } from './components/Toast';
 import { HomePage } from './pages/HomePage';
 import { LogPage } from './pages/LogPage';
 import { PayoutPage } from './pages/PayoutPage';
@@ -66,6 +68,52 @@ const pages: PageInfo[] = [
 ];
 
 function App() {
+  const [isDialogOpen, setDialogOpen] = useState(false);
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  const pushToast = (toast: Omit<ToastMessage, 'id'>) => {
+    const id = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    setToasts((prev) => [...prev, { ...toast, id }]);
+  };
+
+  const removeToast = (id: string) => {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+  };
+
+  const openDialog = () => setDialogOpen(true);
+  const handleDialogConfirm = () => {
+    setDialogOpen(false);
+    pushToast({
+      title: '削除を実行しました',
+      description: 'ConfirmDialog で確定アクションを行う例です。',
+      variant: 'success',
+    });
+  };
+
+  const handleDialogCancel = () => {
+    setDialogOpen(false);
+    pushToast({
+      title: 'キャンセルしました',
+      description: '危険操作は ConfirmDialog を経由させましょう。',
+      variant: 'info',
+    });
+  };
+
+  const handleToastShow = () => {
+    pushToast({
+      title: '一時的なお知らせ',
+      description: 'Toast を経由して軽量なフィードバックを出せます。',
+      variant: 'warning',
+      actionLabel: '元に戻す',
+      onAction: () =>
+        pushToast({
+          title: 'Undo を実行しました',
+          description: 'アクション付き Toast の例です。',
+          variant: 'success',
+        }),
+    });
+  };
+
   return (
     <HashRouter>
       <div className="app">
@@ -162,6 +210,21 @@ function App() {
                     Undo強調（block）
                   </Button>
                 </div>
+                <div className="app__demo-box">
+                  <p className="app__eyebrow">ダイアログとトースト</p>
+                  <p className="app__page-body">
+                    危険操作は ConfirmDialog で一呼吸おき、軽微な通知は ToastStack に積む形で
+                    再利用できます。
+                  </p>
+                  <div className="app__button-row">
+                    <Button variant="danger" onClick={openDialog}>
+                      ConfirmDialog を開く
+                    </Button>
+                    <Button variant="secondary" onClick={handleToastShow}>
+                      Toast を表示
+                    </Button>
+                  </div>
+                </div>
               </div>
               <p className="app__hint">
                 Primary/Secondary/Danger/Undo の 4 種に加え、disabled 状態まで揃えておくと、後続
@@ -176,6 +239,17 @@ function App() {
             </Routes>
           </section>
         </main>
+        <ConfirmDialog
+          open={isDialogOpen}
+          title="本当に削除しますか？"
+          message="この操作は取り消せません。ログを確認してから決定してください。"
+          confirmLabel="削除する"
+          cancelLabel="やめておく"
+          tone="danger"
+          onConfirm={handleDialogConfirm}
+          onCancel={handleDialogCancel}
+        />
+        <ToastStack toasts={toasts} onClose={removeToast} />
       </div>
     </HashRouter>
   );
