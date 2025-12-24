@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
+import { ActionModal } from '../components/ActionModal';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { PlayerCard, type PlayerRole, type PlayerStatus } from '../components/PlayerCard';
@@ -29,8 +31,10 @@ const players: PlayerStub[] = [
 ];
 
 export function TablePage({ description }: TablePageProps) {
+  const [actionModalOpen, setActionModalOpen] = useState(false);
   const turnPlayer = players.find((player) => player.id === 'p5');
   const minRaiseDisplay = 1200;
+  const currentBet = 800;
   const turnPlayerName = turnPlayer?.name ?? '—';
   const requiredText = turnPlayer
     ? `コール ${turnPlayer.needed.toLocaleString()}（継続）`
@@ -135,7 +139,7 @@ export function TablePage({ description }: TablePageProps) {
         >
           <div className={styles.actionStack}>
             <div className={styles.actionButtons}>
-              <Button variant="primary" block>
+              <Button variant="primary" block onClick={() => setActionModalOpen(true)}>
                 アクションを入力（モーダル想定）
               </Button>
               <Button variant="undo" block>
@@ -156,11 +160,25 @@ export function TablePage({ description }: TablePageProps) {
               </NavLink>
             </div>
             <p className={styles.actionNote}>
-              モーダルの開閉や金額入力は後続タスクで実装予定です。先にレイアウトと導線のトーンを固定しています。
+              モーダルを開くとアクション候補とベット/レイズ時の金額入力UIが表示されます。ここでは見た目と導線のみを
+              固定しています。
             </p>
           </div>
         </Card>
       </div>
+
+      <ActionModal
+        open={actionModalOpen}
+        onClose={() => setActionModalOpen(false)}
+        playerName={turnPlayerName}
+        positionLabel="UTG"
+        potSize={5200}
+        currentBet={currentBet}
+        callAmount={turnPlayer?.needed ?? 0}
+        minBet={400}
+        minRaiseTo={minRaiseDisplay}
+        maxAmount={turnPlayer?.stack ?? 0}
+      />
     </div>
   );
 }
