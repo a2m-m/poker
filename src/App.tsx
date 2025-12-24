@@ -50,8 +50,8 @@ const pages: PageInfo[] = [
   {
     path: '/payout',
     title: '配当結果',
-    description: '配当結果を確認するための画面の予定地です。',
-    element: <PayoutPage description="配当結果を確認するための画面の予定地です。" />,
+    description: 'メイン/サイドポットの配当結果を確認するダミー UI です。',
+    element: <PayoutPage description="メイン/サイドポットの配当結果を確認するダミー UI です。" />,
   },
   {
     path: '/log',
