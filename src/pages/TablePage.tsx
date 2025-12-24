@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
+import { PlayerCard, type PlayerRole, type PlayerStatus } from '../components/PlayerCard';
 import styles from './TablePage.module.css';
 
 interface TablePageProps {
@@ -10,10 +11,10 @@ interface TablePageProps {
 type PlayerStub = {
   id: string;
   name: string;
-  role?: 'D' | 'SB' | 'BB';
+  role?: PlayerRole;
   stack: number;
   committed: number;
-  status: '参加中' | 'フォールド' | 'オールイン';
+  status: PlayerStatus;
   needed: number;
 };
 
@@ -115,45 +116,17 @@ export function TablePage({ description }: TablePageProps) {
         >
           <div className={styles.playerList} aria-label="プレイヤー一覧">
             {players.map((player) => (
-              <div
+              <PlayerCard
                 key={player.id}
-                className={`${styles.playerCard}${player.id === turnPlayer?.id ? ` ${styles.playerCardActive}` : ''}`}
-              >
-                <div className={styles.playerHeader}>
-                  <div className={styles.playerNameRow}>
-                    <span className={styles.playerName}>{player.name}</span>
-                    {player.role && <span className={styles.roleBadge}>{player.role}</span>}
-                  </div>
-                  <span
-                    className={`${styles.statusBadge} ${
-                      player.status === 'フォールド'
-                        ? styles.statusFold
-                        : player.status === 'オールイン'
-                          ? styles.statusAllIn
-                          : styles.statusActive
-                    }`}
-                  >
-                    {player.status}
-                  </span>
-                </div>
-                <dl className={styles.playerMeta}>
-                  <div>
-                    <dt>残スタック</dt>
-                    <dd>{player.stack.toLocaleString()}</dd>
-                  </div>
-                  <div>
-                    <dt>ストリート投入</dt>
-                    <dd>{player.committed.toLocaleString()}</dd>
-                  </div>
-                  <div>
-                    <dt>必要額</dt>
-                    <dd className={styles.neededValue}>
-                      {player.needed > 0 ? `必要 ${player.needed.toLocaleString()}` : '—'}
-                    </dd>
-                  </div>
-                </dl>
-                {player.id === turnPlayer?.id && <p className={styles.turnHint}>このプレイヤーの手番です。</p>}
-              </div>
+                name={player.name}
+                role={player.role}
+                stack={player.stack}
+                committed={player.committed}
+                needed={player.needed}
+                status={player.status}
+                isActive={player.id === turnPlayer?.id}
+                turnNote={player.id === turnPlayer?.id ? 'このプレイヤーの手番です。' : undefined}
+              />
             ))}
           </div>
         </Card>
