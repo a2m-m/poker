@@ -38,8 +38,8 @@ const pages: PageInfo[] = [
   {
     path: '/table',
     title: 'テーブル',
-    description: '進行中のハンドを表示するメインビューの予定地です。',
-    element: <TablePage description="進行中のハンドを表示するメインビューの予定地です。" />,
+    description: '進行中のハンドを表示するメインビューのレイアウトデモです。',
+    element: <TablePage description="進行中のハンドを表示するメインビューのレイアウトデモです。" />,
   },
   {
     path: '/showdown',
