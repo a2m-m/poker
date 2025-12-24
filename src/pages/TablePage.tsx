@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { PlayerCard, type PlayerRole, type PlayerStatus } from '../components/PlayerCard';
+import { StatusBar } from '../components/StatusBar';
 import styles from './TablePage.module.css';
 
 interface TablePageProps {
@@ -48,16 +49,17 @@ export function TablePage({ description }: TablePageProps) {
         title="ステータスバー"
         description="ハンド進行中に常時表示するステータスの配置サンプルです。"
       >
-        <div className={styles.statusGrid} aria-label="ステータス項目">
-          <StatusItem label="ハンド" value="#12" />
-          <StatusItem label="ストリート" value="ターン" />
-          <StatusItem label="目標" value="全員の投入額を揃えます" emphasize />
-          <StatusItem label="現在ベット" value="800" />
-          <StatusItem label="コール必要額" value="400" highlight />
-          <StatusItem label="最小レイズ" value="1,200" />
-          <StatusItem label="ボタン" value="佐藤" badge="D" />
-          <StatusItem label="ブラインド" value="鈴木 / 高橋" badge="SB / BB" />
-        </div>
+        <StatusBar
+          handNumber={12}
+          street="ターン"
+          goal="全員の投入額を揃えます"
+          currentBet={800}
+          callNeeded={400}
+          minRaise={1200}
+          buttonPlayer="佐藤"
+          smallBlindPlayer="鈴木"
+          bigBlindPlayer="高橋"
+        />
       </Card>
 
       <div className={styles.topGrid}>
@@ -163,28 +165,6 @@ export function TablePage({ description }: TablePageProps) {
             </p>
           </div>
         </Card>
-      </div>
-    </div>
-  );
-}
-
-type StatusItemProps = {
-  label: string;
-  value: string;
-  highlight?: boolean;
-  emphasize?: boolean;
-  badge?: string;
-};
-
-function StatusItem({ label, value, badge, highlight, emphasize }: StatusItemProps) {
-  return (
-    <div className={`${styles.statusItem}${highlight ? ` ${styles.statusItemHighlight}` : ''}`}>
-      <p className={styles.statusLabel}>{label}</p>
-      <div className={styles.statusValueRow}>
-        <span className={`${styles.statusValue}${emphasize ? ` ${styles.statusValueEmphasis}` : ''}`}>
-          {value}
-        </span>
-        {badge && <span className={styles.badge}>{badge}</span>}
       </div>
     </div>
   );
