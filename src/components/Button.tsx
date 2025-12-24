@@ -8,7 +8,13 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   block?: boolean;
 }
 
-export function Button({ variant = 'primary', block = false, className, children, ...props }: ButtonProps) {
+export function Button({
+  variant = 'primary',
+  block = false,
+  className,
+  children,
+  ...props
+}: ButtonProps) {
   const classes = [styles.button, styles[variant]];
 
   if (block) {
