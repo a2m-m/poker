@@ -1,0 +1,139 @@
+.home {
+  display: flex;
+  flex-direction: column;
+  gap: var(--grid-gap);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  height: 100%;
+}
+
+.heroRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--grid-gap);
+  align-items: stretch;
+}
+
+.lead {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.note {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.metaList {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.6rem;
+  margin: 0;
+}
+
+.metaList dt {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.15rem;
+}
+
+.metaList dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(124, 159, 248, 0.16);
+  color: var(--text-primary);
+  letter-spacing: 0.02em;
+  font-weight: 800;
+}
+
+.quickLinks {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.5rem;
+}
+
+.navLink {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  border: 1px solid var(--border-normal);
+  background: var(--surface-weak);
+  color: var(--text-primary);
+  text-decoration: none;
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease,
+    background 0.2s ease;
+}
+
+.navLink:hover {
+  border-color: var(--accent);
+  background: var(--surface-weak-hover);
+  transform: translateY(-1px);
+}
+
+.navHint {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.pageList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.65rem;
+}
+
+.pageLink {
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+  padding: 0.8rem 0.95rem;
+  border: 1px dashed var(--border-normal);
+  border-radius: 12px;
+  text-decoration: none;
+  color: var(--text-primary);
+  background: var(--surface-weak);
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease,
+    background 0.2s ease;
+}
+
+.pageLink:hover {
+  border-color: var(--accent);
+  background: var(--surface-weak-hover);
+  transform: translateY(-1px);
+}
+
+.pageTitle {
+  font-weight: 800;
+}
+
+.pageDescription {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
