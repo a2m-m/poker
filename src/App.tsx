@@ -129,9 +129,20 @@ function App() {
                     <Button variant="primary">Primary</Button>
                     <Button variant="secondary">Secondary</Button>
                     <Button variant="danger">Danger</Button>
-                    <Button variant="ghost">Ghost</Button>
+                    <Button variant="undo">Undo</Button>
+                  </div>
+                  <div className="app__button-row">
                     <Button variant="primary" disabled>
-                      Disabled
+                      Primary（disabled）
+                    </Button>
+                    <Button variant="secondary" disabled>
+                      Secondary（disabled）
+                    </Button>
+                    <Button variant="danger" disabled>
+                      Danger（disabled）
+                    </Button>
+                    <Button variant="undo" disabled>
+                      Undo（disabled）
                     </Button>
                   </div>
                 </div>
@@ -144,14 +155,17 @@ function App() {
                   <Button variant="primary" block>
                     主要アクション（block）
                   </Button>
-                  <Button variant="ghost" block>
+                  <Button variant="secondary" block>
                     セカンダリ導線（block）
+                  </Button>
+                  <Button variant="undo" block>
+                    Undo強調（block）
                   </Button>
                 </div>
               </div>
               <p className="app__hint">
-                ボタンの塗り/線/ゴーストと余白が揃っていれば、後続ページでも統一したトーンで UI
-                を並べられます。
+                Primary/Secondary/Danger/Undo の 4 種に加え、disabled 状態まで揃えておくと、後続
+                ページでも統一したトーンで UI を並べられます。
               </p>
             </Card>
 
