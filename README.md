@@ -13,3 +13,7 @@ npm install
 npm run dev   # ローカルで動作確認（http://localhost:5173）
 npm run build # 本番ビルド
 ```
+
+## ルーティング方針
+
+GitHub Pages へのデプロイを想定し、サーバー側での 404 ハンドリングに依存しないよう `HashRouter` を採用しています。`/#/table` のようにハッシュ付きの URL になるため、直リンクやリロードでも安全に各ページへ遷移できます。
