@@ -44,8 +44,8 @@ const pages: PageInfo[] = [
   {
     path: '/showdown',
     title: 'ショーダウン',
-    description: '役比較や勝者選択を行う画面の予定地です。',
-    element: <ShowdownPage description="役比較や勝者選択を行う画面の予定地です。" />,
+    description: 'メイン/サイドポットごとに勝者を選ぶレイアウトデモです。',
+    element: <ShowdownPage description="メイン/サイドポットごとに勝者を選ぶレイアウトデモです。" />,
   },
   {
     path: '/payout',
