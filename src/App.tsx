@@ -1,4 +1,6 @@
 import './App.css';
+import { Button } from './components/Button';
+import { Card } from './components/Card';
 import reactLogo from './assets/react.svg';
 import viteLogo from '/vite.svg';
 import { HashRouter, NavLink, Route, Routes } from 'react-router-dom';
@@ -17,12 +19,11 @@ type PageInfo = (typeof pages)[number];
 
 function PagePlaceholder({ title, description, path }: PageInfo) {
   return (
-    <article className="app__card">
-      <p className="app__eyebrow">{path}</p>
-      <h2>{title}</h2>
-      <p className="app__body">{description}</p>
-      <p className="app__hint">実装前のプレースホルダーです。HashRouter で直接アクセス/リロードしても 404 になりません。</p>
-    </article>
+    <Card eyebrow={path} title={title} description={description}>
+      <p className="app__hint">
+        実装前のプレースホルダーです。HashRouter で直接アクセス/リロードしても 404 になりません。
+      </p>
+    </Card>
   );
 }
 
@@ -42,13 +43,18 @@ function App() {
           <h1 className="app__title">Poker Dealer App</h1>
           <p className="app__description">
             GitHub Pages 配信を想定し、URL 直叩きやリロードでも 404 にならないよう HashRouter でルーティングしています。
+            UI は CSS Modules を前提に、カード/ボタン/余白の基準を整えました。
           </p>
         </header>
 
         <main className="app__layout">
-          <nav className="app__nav" aria-label="アプリ内ルート一覧">
-            <h2>主要ルート</h2>
-            <p className="app__body">各ページのプレースホルダーに移動できます。</p>
+          <Card
+            as="nav"
+            eyebrow="Routing"
+            title="主要ルート"
+            description="各ページのプレースホルダーに移動できます。"
+            aria-label="アプリ内ルート一覧"
+          >
             <ul className="app__nav-list">
               {pages.map((page) => (
                 <li key={page.path}>
@@ -68,9 +74,45 @@ function App() {
             <p className="app__hint">
               GitHub Pages のように 404 ハンドリングができない環境でも、#/table のようなハッシュ付き URL で安全に遷移できます。
             </p>
-          </nav>
+          </Card>
 
           <section className="app__content">
+            <Card
+              eyebrow="UI Foundation"
+              title="UI基盤プレビュー"
+              description="カード/ボタン/余白の基準をまとめたサンプルです。各ページで再利用できるスタイルを CSS Modules で管理します。"
+            >
+              <div className="app__ui-grid">
+                <div className="app__demo-box">
+                  <p className="app__eyebrow">ボタンバリエーション</p>
+                  <div className="app__button-row">
+                    <Button variant="primary">Primary</Button>
+                    <Button variant="secondary">Secondary</Button>
+                    <Button variant="danger">Danger</Button>
+                    <Button variant="ghost">Ghost</Button>
+                    <Button variant="primary" disabled>
+                      Disabled
+                    </Button>
+                  </div>
+                </div>
+                <div className="app__demo-box">
+                  <p className="app__eyebrow">カードと余白</p>
+                  <p className="app__page-body">
+                    ダッシュボード風の余白と装飾を <code>Card</code> コンポーネントに集約しています。
+                  </p>
+                  <Button variant="primary" block>
+                    主要アクション（block）
+                  </Button>
+                  <Button variant="ghost" block>
+                    セカンダリ導線（block）
+                  </Button>
+                </div>
+              </div>
+              <p className="app__hint">
+                ボタンの塗り/線/ゴーストと余白が揃っていれば、後続ページでも統一したトーンで UI を並べられます。
+              </p>
+            </Card>
+
             <Routes>
               {pages.map((page) => (
                 <Route key={page.path} path={page.path} element={<PagePlaceholder {...page} />} />
