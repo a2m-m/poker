@@ -6,7 +6,7 @@ import { Card } from '../components/Card';
 import { PlayerCard, type PlayerRole, type PlayerStatus } from '../components/PlayerCard';
 import { StatusBar } from '../components/StatusBar';
 import { TurnPanel } from '../components/TurnPanel';
-import { PlayerState, Street } from '../domain/types';
+import { ActionLogEntry, ActionType, PlayerState, Street } from '../domain/types';
 import { useGameState } from '../state/GameStateContext';
 import styles from './TablePage.module.css';
 
@@ -45,7 +45,7 @@ const calcPotTotal = (pot: { main: number; sides: { amount: number }[] }) =>
   pot.main + pot.sides.reduce((sum, side) => sum + side.amount, 0);
 
 export function TablePage({ description }: TablePageProps) {
-  const { gameState } = useGameState();
+  const { gameState, updateGameState } = useGameState();
   const [actionModalOpen, setActionModalOpen] = useState(false);
 
   if (!gameState) {
@@ -83,6 +83,39 @@ export function TablePage({ description }: TablePageProps) {
   const buttonPlayer = players.find((player) => player.seatIndex === hand.dealerIndex)?.name ?? '—';
   const smallBlindPlayer = players.find((player) => player.seatIndex === hand.sbIndex)?.name ?? '—';
   const bigBlindPlayer = players.find((player) => player.seatIndex === hand.bbIndex)?.name ?? '—';
+
+  const appendDemoLog = () => {
+    updateGameState((prev) => {
+      if (!prev) return prev;
+
+      const turn = prev.players.find((player) => player.id === prev.hand.currentTurnPlayerId) ?? prev.players[0];
+      if (!turn) return prev;
+
+      const nextSeq = (prev.hand.actionLog.at(-1)?.seq ?? 0) + 1;
+      const actionCycle: ActionType[] = ['CHECK', 'CALL', 'BET', 'RAISE', 'FOLD', 'ALL_IN'];
+      const type = actionCycle[nextSeq % actionCycle.length];
+      const baseAmount = Math.max(0, prev.hand.currentBet);
+      const amount = ['CHECK', 'FOLD'].includes(type)
+        ? undefined
+        : Math.max(calcCallNeeded(prev.hand, turn.id), baseAmount + nextSeq * 50);
+
+      const entry: ActionLogEntry = {
+        seq: nextSeq,
+        type,
+        playerId: turn.id,
+        amount,
+        street: prev.hand.street,
+      };
+
+      return {
+        ...prev,
+        hand: {
+          ...prev.hand,
+          actionLog: [...prev.hand.actionLog, entry],
+        },
+      };
+    });
+  };
 
   return (
     <div className={styles.page}>
@@ -199,6 +232,9 @@ export function TablePage({ description }: TablePageProps) {
               </Button>
             </div>
             <div className={styles.secondaryActions}>
+              <Button variant="secondary" onClick={appendDemoLog}>
+                デモログを1件追加
+              </Button>
               <Button variant="secondary">ログを確認</Button>
               <Button variant="secondary">ショーダウンへ</Button>
               <Button variant="danger">設定 / リセット</Button>

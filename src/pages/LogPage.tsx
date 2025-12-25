@@ -1,7 +1,9 @@
 import { useMemo } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
+import { ActionLogEntry, ActionType, Street } from '../domain/types';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
+import { useGameState } from '../state/GameStateContext';
 import styles from './LogPage.module.css';
 
 interface LogPageProps {
@@ -20,6 +22,34 @@ type LogEntry = {
   toAmount?: number;
   note?: string;
   timestamp?: string;
+};
+
+const streetLabels: Record<Street, string> = {
+  PREFLOP: 'プリフロップ',
+  FLOP: 'フロップ',
+  TURN: 'ターン',
+  RIVER: 'リバー',
+  SHOWDOWN: 'ショーダウン',
+  PAYOUT: '配当',
+};
+
+const actionLabels: Record<ActionType, string> = {
+  CHECK: 'チェック',
+  BET: 'ベット',
+  CALL: 'コール',
+  RAISE: 'レイズ',
+  FOLD: 'フォールド',
+  ALL_IN: 'オールイン',
+  ADVANCE_STREET: 'ストリート終了',
+  START_HAND: 'ハンド開始',
+  END_HAND: 'ハンド終了',
+};
+
+const getRoleForIndex = (hand: { dealerIndex: number; sbIndex: number; bbIndex: number }, seatIndex: number) => {
+  if (seatIndex === hand.dealerIndex) return 'D';
+  if (seatIndex === hand.sbIndex) return 'SB';
+  if (seatIndex === hand.bbIndex) return 'BB';
+  return '参加者';
 };
 
 const sampleEntries: LogEntry[] = [
@@ -121,15 +151,47 @@ const sampleEntries: LogEntry[] = [
   },
 ];
 
-function formatAction(entry: LogEntry) {
+const formatAction = (entry: LogEntry) => {
   const base = entry.amount ? `${entry.action} ${entry.amount.toLocaleString()}` : entry.action;
   if (!entry.toAmount) return base;
   return `${base}（合計 ${entry.toAmount.toLocaleString()}）`;
-}
+};
+
+const toDisplayEntries = (
+  actionLog: ActionLogEntry[],
+  options: {
+    players: { id: string; name: string; seatIndex: number }[];
+    hand: { dealerIndex: number; sbIndex: number; bbIndex: number };
+  },
+): LogEntry[] => {
+  const { players, hand } = options;
+  return actionLog.map((entry) => {
+    const player = players.find((p) => p.id === entry.playerId);
+    const position = player ? getRoleForIndex(hand, player.seatIndex) : '参加者';
+    return {
+      id: `log-${entry.seq}`,
+      order: entry.seq,
+      street: streetLabels[entry.street],
+      actor: player?.name ?? '不明なプレイヤー',
+      position,
+      action: actionLabels[entry.type] ?? entry.type,
+      amount: entry.amount,
+      note: entry.snapshot ? 'スナップショット保存あり' : undefined,
+    };
+  });
+};
 
 export function LogPage({ description, entries }: LogPageProps) {
   const navigate = useNavigate();
-  const logs = entries ?? sampleEntries;
+  const { gameState } = useGameState();
+
+  const logs = useMemo(() => {
+    if (entries) return entries;
+    if (gameState) {
+      return toDisplayEntries(gameState.hand.actionLog, { players: gameState.players, hand: gameState.hand });
+    }
+    return sampleEntries;
+  }, [entries, gameState]);
 
   const { streets, totalActions } = useMemo(() => {
     const uniqueStreets = Array.from(new Set(logs.map((log) => log.street)));
