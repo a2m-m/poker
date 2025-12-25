@@ -6,7 +6,7 @@ import { Card } from '../components/Card';
 import { PlayerCard, type PlayerRole, type PlayerStatus } from '../components/PlayerCard';
 import { StatusBar } from '../components/StatusBar';
 import { TurnPanel } from '../components/TurnPanel';
-import { calcCallNeeded } from '../domain/bets';
+import { calcCallNeeded, calcMinRaiseTo } from '../domain/bets';
 import { ActionLogEntry, ActionType, HandState, PlayerState, Street } from '../domain/types';
 import { useGameState } from '../state/GameStateContext';
 import styles from './TablePage.module.css';
@@ -76,11 +76,14 @@ export function TablePage({ description }: TablePageProps) {
   const turnPlayer = players.find((player) => player.id === hand.currentTurnPlayerId);
   const turnRole = turnPlayer ? getRoleForIndex(hand, turnPlayer.seatIndex) : undefined;
   const callNeeded = turnPlayer ? calcCallNeeded(hand, turnPlayer.id) : 0;
-  const minRaiseTo = hand.currentBet + hand.lastRaiseSize;
+  const minRaiseTo = calcMinRaiseTo(hand);
+  const canRaise = minRaiseTo !== null;
+  const minRaiseText = minRaiseTo?.toLocaleString() ?? '—';
   const potTotal = calcPotTotal(hand.pot);
   const buttonPlayer = players.find((player) => player.seatIndex === hand.dealerIndex)?.name ?? '—';
   const smallBlindPlayer = players.find((player) => player.seatIndex === hand.sbIndex)?.name ?? '—';
   const bigBlindPlayer = players.find((player) => player.seatIndex === hand.bbIndex)?.name ?? '—';
+  const raiseDisabledReason = hand.currentBet === 0 ? '現在ベットがあるときのみ' : '最小レイズ未満のオールインにより再オープンしていません';
 
   const appendDemoLog = () => {
     updateGameState((prev) => {
@@ -230,9 +233,7 @@ export function TablePage({ description }: TablePageProps) {
             turnPlayer={turnPlayer?.name ?? '—'}
             positionLabel={turnRole ?? '参加者'}
             requiredText={`コール ${callNeeded.toLocaleString()}（継続）`}
-            availableText={`チェック / レイズは ${minRaiseTo.toLocaleString()} 以上 / オールイン ${(
-              turnPlayer?.stack ?? 0
-            ).toLocaleString()}`}
+            availableText={`チェック / レイズは ${minRaiseText} 以上 / オールイン ${(turnPlayer?.stack ?? 0).toLocaleString()}`}
           />
         </Card>
       </div>
@@ -312,6 +313,8 @@ export function TablePage({ description }: TablePageProps) {
         callAmount={callNeeded}
         minBet={hand.currentBet}
         minRaiseTo={minRaiseTo}
+        canRaise={canRaise}
+        raiseDisabledReason={canRaise ? undefined : raiseDisabledReason}
         maxAmount={turnPlayer?.stack ?? 0}
       />
     </div>

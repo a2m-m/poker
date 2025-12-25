@@ -6,7 +6,7 @@ type StatusBarProps = {
   goal: string;
   currentBet: number;
   callNeeded: number;
-  minRaise: number;
+  minRaise: number | null;
   buttonPlayer?: string;
   smallBlindPlayer?: string;
   bigBlindPlayer?: string;
@@ -47,6 +47,7 @@ export function StatusBar({
 }: StatusBarProps) {
   const buttonDisplay = buttonPlayer ?? '—';
   const blindDisplay = `${smallBlindPlayer ?? '—'} / ${bigBlindPlayer ?? '—'}`;
+  const minRaiseDisplay = minRaise !== null ? minRaise.toLocaleString() : '—';
 
   return (
     <div className={styles.statusBar} aria-label="ステータスバー">
@@ -55,7 +56,7 @@ export function StatusBar({
       <StatusItem label="目標" value={goal} emphasize />
       <StatusItem label="現在ベット" value={currentBet.toLocaleString()} />
       <StatusItem label="コール必要額" value={callNeeded.toLocaleString()} highlight={callNeeded > 0} />
-      <StatusItem label="最小レイズ" value={minRaise.toLocaleString()} />
+      <StatusItem label="最小レイズ" value={minRaiseDisplay} />
       <StatusItem label="ボタン" value={buttonDisplay} badge={buttonPlayer ? 'D' : undefined} />
       <StatusItem label="ブラインド" value={blindDisplay} badge={smallBlindPlayer || bigBlindPlayer ? 'SB / BB' : undefined} />
     </div>
