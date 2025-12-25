@@ -5,6 +5,7 @@ import { Card } from '../components/Card';
 import { createNewGame, type PlayerSetup } from '../domain/game';
 import { type GameSettings } from '../domain/types';
 import { useGameState } from '../state/GameStateContext';
+import { hasEnoughPlayersCount } from '../state/selectors';
 import styles from './SetupPage.module.css';
 
 interface SetupPageProps {
@@ -32,7 +33,8 @@ export function SetupPage({ description }: SetupPageProps) {
   const [newStack, setNewStack] = useState(15000);
   const [inlineMessage, setInlineMessage] = useState('開始すると現在の設定がテーブルに反映されます。');
 
-  const canStart = players.length >= 2;
+  const canStart = hasEnoughPlayersCount(players.length);
+  const startDisabledReason = canStart ? null : '2人以上になるまで開始できません。';
 
   const handleAddPlayer = () => {
     if (!newName.trim()) return;
@@ -261,7 +263,7 @@ export function SetupPage({ description }: SetupPageProps) {
           <Button variant="primary" onClick={handleStart} disabled={!canStart}>
             テーブルを開く
           </Button>
-          {!canStart && <p className={styles.inlineError}>2人以上になるまで開始できません。</p>}
+          {startDisabledReason && <p className={styles.inlineError}>{startDisabledReason}</p>}
           <p className={styles.note}>{inlineMessage}</p>
         </div>
       </Card>

@@ -4,6 +4,7 @@ import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { useGameState } from '../state/GameStateContext';
+import { getResumeAvailability } from '../state/selectors';
 import styles from './HomePage.module.css';
 
 interface HomePageProps {
@@ -12,35 +13,57 @@ interface HomePageProps {
 
 export function HomePage({ description }: HomePageProps) {
   const navigate = useNavigate();
-  const [isResetDialogOpen, setResetDialogOpen] = useState(false);
+  const [activeDialog, setActiveDialog] = useState<'resume' | 'reset' | null>(null);
   const { gameState, clearGameState, hasCorruptedSave } = useGameState();
-
-  const hasGameState = useMemo(() => !!gameState, [gameState]);
+  const resumeAvailability = useMemo(() => getResumeAvailability(gameState), [gameState]);
 
   const handleNewGame = () => {
     navigate('/setup');
   };
 
   const handleResume = () => {
-    if (!hasGameState) {
-      navigate('/setup');
+    if (resumeAvailability.reason) return;
+    setActiveDialog('resume');
+  };
+
+  const handleResetRequest = () => {
+    setActiveDialog('reset');
+  };
+
+  const handleResetConfirm = () => {
+    clearGameState();
+    setActiveDialog(null);
+  };
+
+  const handleResetCancel = () => {
+    setActiveDialog(null);
+  };
+
+  const handleResumeConfirm = () => {
+    if (resumeAvailability.reason) {
+      setActiveDialog(null);
       return;
     }
     navigate('/table');
   };
 
-  const handleResetRequest = () => {
-    setResetDialogOpen(true);
-  };
+  const dialogTitle =
+    activeDialog === 'resume' ? '前回の状態で再開しますか？' : '保存データをリセットしますか？';
 
-  const handleResetConfirm = () => {
-    setResetDialogOpen(false);
-    clearGameState();
-  };
+  const dialogMessage =
+    activeDialog === 'resume'
+      ? '保存済みのゲーム状態を読み込み、テーブルに移動します。必要に応じてセットアップで編集してください。'
+      : '保存済みのゲーム状態を削除します。リロード後も再開できなくなります。';
 
-  const handleResetCancel = () => {
-    setResetDialogOpen(false);
-  };
+  const dialogConfirmLabel = activeDialog === 'resume' ? 'テーブルに移動する' : 'リセットする';
+  const dialogCancelLabel = activeDialog === 'resume' ? 'キャンセル' : 'やめておく';
+  const dialogTone = activeDialog === 'resume' ? 'default' : 'danger';
+  const isDialogOpen = activeDialog !== null;
+
+  const resumeDisabledReason = resumeAvailability.reason;
+  const resumeDisabled = !!resumeDisabledReason;
+
+  const resumeNote = resumeDisabledReason ?? '保存済みのゲームがあるときのみ再開できます。';
 
   return (
     <div className={styles.home}>
@@ -67,16 +90,14 @@ export function HomePage({ description }: HomePageProps) {
             <Button variant="primary" block onClick={handleNewGame}>
               新規ゲームを開始
             </Button>
-            <Button variant="secondary" block onClick={handleResume} disabled={!hasGameState}>
+            <Button variant="secondary" block onClick={handleResume} disabled={resumeDisabled}>
               前回を再開（デモ）
             </Button>
             <Button variant="danger" block onClick={handleResetRequest}>
               リセット（全削除）
             </Button>
           </div>
-          {!hasGameState && (
-            <p className={styles.note}>セットアップで開始すると「前回を再開」が有効になります。</p>
-          )}
+          <p className={styles.note}>{resumeNote}</p>
           <p className={styles.note}>
             セットアップで開始したゲーム状態はブラウザに一時保存され、リロード後でも「前回を再開」からテーブルに戻れるようになりました。
           </p>
@@ -157,13 +178,13 @@ export function HomePage({ description }: HomePageProps) {
       </Card>
 
       <ConfirmDialog
-        open={isResetDialogOpen}
-        title="保存データをリセットしますか？"
-        message="保存済みのゲーム状態を削除します。リロード後も再開できなくなります。"
-        confirmLabel="リセットする"
-        cancelLabel="やめておく"
-        tone="danger"
-        onConfirm={handleResetConfirm}
+        open={isDialogOpen}
+        title={dialogTitle}
+        message={dialogMessage}
+        confirmLabel={dialogConfirmLabel}
+        cancelLabel={dialogCancelLabel}
+        tone={dialogTone}
+        onConfirm={activeDialog === 'resume' ? handleResumeConfirm : handleResetConfirm}
         onCancel={handleResetCancel}
       />
     </div>

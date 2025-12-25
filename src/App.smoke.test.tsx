@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { storageKeys } from './domain/storage';
 import App from './App';
@@ -34,6 +34,9 @@ describe('主要画面スモークテスト', () => {
     expect(resumeButton).toBeEnabled();
 
     fireEvent.click(resumeButton);
+    const resumeDialog = await screen.findByRole('dialog', { name: '前回の状態で再開しますか？' });
+    fireEvent.click(within(resumeDialog).getByRole('button', { name: 'テーブルに移動する' }));
+
     expect(await screen.findByRole('heading', { level: 2, name: 'テーブル' })).toBeInTheDocument();
   });
 });
