@@ -3,6 +3,14 @@ import type { ActionLogEntry, ActionType, HandState, Player, PlayerId } from './
 
 type HandForAction = Pick<HandState, 'currentBet' | 'contribThisStreet' | 'reopenAllowed'>;
 
+export type PlayerActionType = Extract<ActionType, 'CHECK' | 'CALL' | 'BET' | 'RAISE' | 'FOLD' | 'ALL_IN'>;
+
+export type ActionAvailability = {
+  type: PlayerActionType;
+  available: boolean;
+  reason?: string;
+};
+
 const cloneHandState = (hand: HandState): HandState => JSON.parse(JSON.stringify(hand)) as HandState;
 
 const isActive = (player: Player): boolean => player.state === 'ACTIVE';
@@ -19,6 +27,72 @@ const canRaise = (hand: HandForAction, stack: number): boolean =>
 const canFold = (player: Player): boolean => player.state === 'ACTIVE';
 
 const canAllIn = (stack: number): boolean => stack > 0;
+
+export const describeActionAvailability = (hand: HandForAction, player: Player): ActionAvailability[] => {
+  const unavailable: ActionAvailability[] = [
+    { type: 'CHECK', available: false, reason: '手番のプレイヤーではありません' },
+    { type: 'CALL', available: false, reason: '手番のプレイヤーではありません' },
+    { type: 'BET', available: false, reason: '手番のプレイヤーではありません' },
+    { type: 'RAISE', available: false, reason: '手番のプレイヤーではありません' },
+    { type: 'FOLD', available: false, reason: '手番のプレイヤーではありません' },
+    { type: 'ALL_IN', available: false, reason: '手番のプレイヤーではありません' },
+  ];
+
+  if (!isActive(player)) return unavailable;
+
+  const callNeeded = calcCallNeeded(hand, player.id);
+  const availability: ActionAvailability[] = [
+    {
+      type: 'CHECK',
+      available: canCheck(callNeeded),
+      reason: callNeeded > 0 ? 'コール必要額があるためチェック不可' : undefined,
+    },
+    {
+      type: 'CALL',
+      available: canCall(callNeeded, player.stack),
+      reason:
+        callNeeded <= 0
+          ? 'コール不要の状態です'
+          : player.stack <= 0
+            ? 'スタックがありません'
+            : undefined,
+    },
+    {
+      type: 'BET',
+      available: canBet(hand.currentBet, player.stack),
+      reason:
+        hand.currentBet > 0
+          ? '現在ベットがあるためベット不可'
+          : player.stack <= 0
+            ? 'スタックがありません'
+            : undefined,
+    },
+    {
+      type: 'RAISE',
+      available: canRaise(hand, player.stack),
+      reason:
+        hand.currentBet === 0
+          ? '現在ベットがありません'
+          : !hand.reopenAllowed
+            ? '最小レイズ未満のため再オープン不可'
+            : player.stack <= 0
+              ? 'スタックがありません'
+              : undefined,
+    },
+    {
+      type: 'FOLD',
+      available: canFold(player),
+      reason: player.state !== 'ACTIVE' ? 'アクティブプレイヤーではありません' : undefined,
+    },
+    {
+      type: 'ALL_IN',
+      available: canAllIn(player.stack),
+      reason: player.stack <= 0 ? 'スタックがありません' : undefined,
+    },
+  ];
+
+  return availability;
+};
 
 /**
  * プレイヤーが選択できるアクションを判定します。

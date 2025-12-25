@@ -10,7 +10,9 @@ import { TurnPanel } from '../components/TurnPanel';
 import { calcCallNeeded } from '../domain/bets';
 import { ActionLogEntry, ActionType, HandState, PlayerState } from '../domain/types';
 import { useGameState } from '../state/GameStateContext';
+import { describeActionAvailability } from '../domain/actions';
 import { buildTableViewModel, getRoleForIndex } from '../state/tableSelectors';
+import { applyPlayerActionToState, PlayerActionInput } from '../state/actions';
 import styles from './TablePage.module.css';
 
 interface TablePageProps {
@@ -68,8 +70,9 @@ export function TablePage({ description }: TablePageProps) {
     potTotal,
   } = buildTableViewModel(players, hand);
 
-  const canRaise = minRaiseTo !== null;
-  const raiseDisabledReason = hand.currentBet === 0 ? '現在ベットがあるときのみ' : '最小レイズ未満のオールインにより再オープンしていません';
+  const turnContribution = turnPlayer ? hand.contribThisStreet[turnPlayer.id] ?? 0 : 0;
+  const maxReachableAmount = turnPlayer ? turnContribution + turnPlayer.stack : 0;
+  const availableActions = turnPlayer ? describeActionAvailability(hand, turnPlayer) : [];
 
   const appendDemoLog = () => {
     updateGameState((prev) => {
@@ -126,6 +129,22 @@ export function TablePage({ description }: TablePageProps) {
     });
   };
 
+  const handleConfirmAction = (actionInput: PlayerActionInput) => {
+    updateGameState((prev) => {
+      if (!prev) return prev;
+
+      try {
+        return applyPlayerActionToState(prev, actionInput);
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error(error);
+        return prev;
+      }
+    });
+
+    setActionModalOpen(false);
+  };
+
   const handleUndo = () => {
     updateGameState((prev) => {
       if (!prev) return prev;
@@ -148,6 +167,7 @@ export function TablePage({ description }: TablePageProps) {
 
       return {
         ...prev,
+        players: lastEntry.playersSnapshot ?? prev.players,
         hand: {
           ...lastEntry.snapshot,
           actionLog: restoredActionLog,
@@ -323,11 +343,12 @@ export function TablePage({ description }: TablePageProps) {
         potSize={potTotal}
         currentBet={hand.currentBet}
         callAmount={callNeeded}
-        minBet={hand.currentBet}
+        minBet={hand.lastRaiseSize}
         minRaiseTo={minRaiseTo}
-        canRaise={canRaise}
-        raiseDisabledReason={canRaise ? undefined : raiseDisabledReason}
-        maxAmount={turnPlayer?.stack ?? 0}
+        maxAmount={maxReachableAmount}
+        stack={turnPlayer?.stack ?? 0}
+        availableActions={availableActions}
+        onConfirm={handleConfirmAction}
       />
     </div>
   );

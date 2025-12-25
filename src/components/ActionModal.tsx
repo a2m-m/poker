@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
+import { ActionAvailability, PlayerActionType } from '../domain/actions';
+import { PlayerActionInput } from '../state/actions';
 import styles from './ActionModal.module.css';
 import { Button } from './Button';
 
-type ActionType = 'check' | 'call' | 'bet' | 'raise' | 'fold' | 'allIn';
-
-interface ActionModalProps {
+type ActionModalProps = {
   open: boolean;
   playerName: string;
   positionLabel?: string;
@@ -14,36 +14,37 @@ interface ActionModalProps {
   minBet: number;
   minRaiseTo: number | null;
   maxAmount: number;
-  canRaise: boolean;
-  raiseDisabledReason?: string;
+  stack: number;
+  availableActions: ActionAvailability[];
+  onConfirm: (action: PlayerActionInput) => void;
   onClose: () => void;
-}
-
-const actionLabels: Record<ActionType, string> = {
-  check: 'CHECK',
-  call: 'CALL',
-  bet: 'BET',
-  raise: 'RAISE',
-  fold: 'FOLD',
-  allIn: 'ALL IN',
 };
 
-const actionDescriptions: Record<ActionType, string> = {
-  check: '現在の必要額が0のときのみ',
-  call: '必要額を支払って継続',
-  bet: '現在ベットが0のときのみ',
-  raise: '現在ベットがあるときのみ',
-  fold: 'このハンドを降りる',
-  allIn: '残スタックをすべて投入',
+const actionOrder: PlayerActionType[] = ['CHECK', 'CALL', 'BET', 'RAISE', 'FOLD', 'ALL_IN'];
+
+const actionLabels: Record<PlayerActionType, string> = {
+  CHECK: 'CHECK',
+  CALL: 'CALL',
+  BET: 'BET',
+  RAISE: 'RAISE',
+  FOLD: 'FOLD',
+  ALL_IN: 'ALL IN',
 };
 
-function formatNumber(value: number) {
-  return value.toLocaleString();
-}
+const actionDescriptions: Record<PlayerActionType, string> = {
+  CHECK: '現在の必要額が0のときのみ',
+  CALL: '必要額を支払って継続',
+  BET: '現在ベットが0のときのみ',
+  RAISE: '現在ベットがあるときのみ',
+  FOLD: 'このハンドを降りる',
+  ALL_IN: '残スタックをすべて投入',
+};
 
-function formatNumberOrDash(value: number | null) {
-  return value !== null ? value.toLocaleString() : '—';
-}
+const formatNumber = (value: number) => value.toLocaleString();
+
+const formatNumberOrDash = (value: number | null) => (value !== null ? value.toLocaleString() : '—');
+
+const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 
 export function ActionModal({
   open,
@@ -54,61 +55,72 @@ export function ActionModal({
   callAmount,
   minBet,
   minRaiseTo,
-  canRaise,
-  raiseDisabledReason,
   maxAmount,
+  stack,
+  availableActions,
+  onConfirm,
   onClose,
 }: ActionModalProps) {
   const raiseBase = minRaiseTo ?? minBet;
-  const [selectedAction, setSelectedAction] = useState<ActionType>(callAmount === 0 ? 'check' : 'call');
+  const defaultAction = useMemo(() => {
+    const availabilityMap = new Map(availableActions.map((action) => [action.type, action]));
+    const firstAvailable = actionOrder.find((type) => availabilityMap.get(type)?.available);
+    if (callAmount === 0 && availabilityMap.get('CHECK')?.available) return 'CHECK';
+    if (firstAvailable) return firstAvailable;
+    return 'CALL';
+  }, [availableActions, callAmount]);
+
+  const [selectedAction, setSelectedAction] = useState<PlayerActionType>(defaultAction);
   const [amount, setAmount] = useState<number>(raiseBase);
 
   useEffect(() => {
-    const defaultAction: ActionType = callAmount === 0 ? 'check' : 'call';
     setSelectedAction(defaultAction);
-    setAmount(raiseBase);
-  }, [open, callAmount, raiseBase]);
+    setAmount(clamp(raiseBase, minBet, maxAmount));
+  }, [open, defaultAction, raiseBase, minBet, maxAmount]);
 
   useEffect(() => {
-    if (selectedAction === 'bet' || selectedAction === 'raise') {
-      const baseValue = selectedAction === 'bet' ? minBet : raiseBase;
-      setAmount((current) => Math.min(Math.max(current, baseValue), maxAmount));
+    if (selectedAction === 'BET' || selectedAction === 'RAISE') {
+      const baseValue = selectedAction === 'BET' ? minBet : raiseBase;
+      setAmount((current) => clamp(current, baseValue, maxAmount));
     }
   }, [selectedAction, minBet, raiseBase, maxAmount]);
 
-  const requiresAmount = selectedAction === 'bet' || selectedAction === 'raise';
-  const minValue = selectedAction === 'bet' ? minBet : raiseBase;
+  const availabilityMap = useMemo(() => new Map(availableActions.map((action) => [action.type, action])), [availableActions]);
+
+  const requiresAmount = selectedAction === 'BET' || selectedAction === 'RAISE';
+  const minValue = selectedAction === 'BET' ? minBet : raiseBase;
 
   const presets = useMemo(
     () => [
       { label: '最小', value: minValue },
-      { label: '1/2ポット', value: Math.max(minValue, Math.round(potSize / 2 / 100) * 100) },
-      { label: 'ポット', value: Math.max(minValue, Math.round(potSize / 100) * 100) },
+      { label: '1/2ポット', value: clamp(Math.round(potSize / 2 / 100) * 100, minValue, maxAmount) },
+      { label: 'ポット', value: clamp(Math.round(potSize / 100) * 100, minValue, maxAmount) },
       { label: '最大（ALL-IN）', value: maxAmount },
     ],
     [maxAmount, minValue, potSize],
   );
 
-  const actions: { type: ActionType; label: string; disabled?: boolean; reason?: string }[] = [
-    { type: 'check', label: actionLabels.check, disabled: callAmount > 0, reason: 'コール必要額が0のときのみ' },
-    { type: 'call', label: actionLabels.call },
-    { type: 'bet', label: actionLabels.bet, disabled: currentBet > 0, reason: '現在ベットが0のときのみ' },
-    {
-      type: 'raise',
-      label: actionLabels.raise,
-      disabled: !canRaise,
-      reason: raiseDisabledReason ?? '現在ベットがあるときのみ',
-    },
-    { type: 'fold', label: actionLabels.fold },
-    { type: 'allIn', label: actionLabels.allIn },
-  ];
-
   if (!open) return null;
 
   const handleAmountChange = (value: number) => {
-    const nextValue = Math.min(Math.max(value, minValue), maxAmount);
+    const numericValue = Number.isNaN(value) ? minValue : value;
+    const nextValue = clamp(numericValue, minValue, maxAmount);
     setAmount(nextValue);
   };
+
+  const submit = () => {
+    const availability = availabilityMap.get(selectedAction);
+    if (!availability?.available) return;
+
+    if (requiresAmount) {
+      onConfirm({ type: selectedAction, amount });
+    } else {
+      onConfirm({ type: selectedAction });
+    }
+  };
+
+  const selectedAvailability = availabilityMap.get(selectedAction);
+  const confirmDisabled = !selectedAvailability?.available || (requiresAmount && (amount < minValue || amount > maxAmount));
 
   return (
     <div className={styles.overlay} role="presentation" onClick={onClose}>
@@ -128,27 +140,25 @@ export function ActionModal({
             {positionLabel && <span className={styles.positionBadge}>{positionLabel}</span>}
           </div>
           <p className={styles.subtitle}>
-            残りスタック {formatNumber(maxAmount)} ／ 現在ベット {formatNumber(currentBet)} ／ コール必要{' '}
-            {formatNumber(callAmount)}
+            ポット合計 {formatNumber(potSize)} ／ 残りスタック {formatNumber(stack)} ／ 現在ベット {formatNumber(currentBet)}
           </p>
-        </div>
-
-        <div className={styles.summaryGrid} aria-label="現在の状況">
-          <div>
-            <p className={styles.summaryLabel}>現在ベット</p>
-            <p className={styles.summaryValue}>{formatNumber(currentBet)}</p>
-          </div>
-          <div>
-            <p className={styles.summaryLabel}>コール必要額</p>
-            <p className={styles.summaryValue}>{formatNumber(callAmount)}</p>
-          </div>
-          <div>
-            <p className={styles.summaryLabel}>最小レイズ</p>
-            <p className={styles.summaryValue}>{formatNumberOrDash(minRaiseTo)}</p>
-          </div>
-          <div>
-            <p className={styles.summaryLabel}>ポット合計</p>
-            <p className={styles.summaryValue}>{formatNumber(potSize)}</p>
+          <div className={styles.summaryGrid} aria-label="現在の状況">
+            <div>
+              <p className={styles.summaryLabel}>現在ベット</p>
+              <p className={styles.summaryValue}>{formatNumber(currentBet)}</p>
+            </div>
+            <div>
+              <p className={styles.summaryLabel}>コール必要額</p>
+              <p className={styles.summaryValue}>{formatNumber(callAmount)}</p>
+            </div>
+            <div>
+              <p className={styles.summaryLabel}>最小レイズ</p>
+              <p className={styles.summaryValue}>{formatNumberOrDash(minRaiseTo)}</p>
+            </div>
+            <div>
+              <p className={styles.summaryLabel}>残スタック</p>
+              <p className={styles.summaryValue}>{formatNumber(stack)}</p>
+            </div>
           </div>
         </div>
 
@@ -158,24 +168,21 @@ export function ActionModal({
             <p className={styles.sectionHint}>灰色は条件未達のため選択不可</p>
           </div>
           <div className={styles.actionGrid}>
-            {actions.map((action) => {
-              const disabled = action.disabled ?? false;
-              const selected = selectedAction === action.type;
+            {actionOrder.map((type) => {
+              const availability = availabilityMap.get(type) ?? { available: false, reason: '入力不可', type };
+              const disabled = !availability.available;
+              const selected = selectedAction === type;
               return (
                 <button
-                  key={action.type}
+                  key={type}
                   type="button"
-                  className={[
-                    styles.actionButton,
-                    selected ? styles.selected : '',
-                    disabled ? styles.disabled : '',
-                  ].join(' ')}
-                  onClick={() => setSelectedAction(action.type)}
+                  className={[styles.actionButton, selected ? styles.selected : '', disabled ? styles.disabled : ''].join(' ')}
+                  onClick={() => setSelectedAction(type)}
                   disabled={disabled}
                 >
-                  <span className={styles.actionLabel}>{action.label}</span>
+                  <span className={styles.actionLabel}>{actionLabels[type]}</span>
                   <span className={styles.actionDescription}>
-                    {disabled ? action.reason : actionDescriptions[action.type]}
+                    {disabled ? availability.reason : actionDescriptions[type]}
                   </span>
                 </button>
               );
@@ -187,9 +194,9 @@ export function ActionModal({
           <div className={styles.section}>
             <div className={styles.sectionHeading}>
               <p className={styles.sectionLabel}>
-                {selectedAction === 'bet' ? 'ベット額を入力' : 'レイズ後の合計額を入力'}
+                {selectedAction === 'BET' ? 'ベット額を入力' : 'レイズ後の合計額を入力'}
               </p>
-              <p className={styles.sectionHint}>入力は範囲内で丸められます</p>
+              <p className={styles.sectionHint}>入力は範囲内で丸められます（ALL-INは最大値を選択）</p>
             </div>
             <div className={styles.amountRow}>
               <div className={styles.inputGroup}>
@@ -247,7 +254,9 @@ export function ActionModal({
           <Button variant="secondary" onClick={onClose}>
             キャンセル
           </Button>
-          <Button variant="primary">{actionLabels[selectedAction]} を確定</Button>
+          <Button variant="primary" onClick={submit} disabled={confirmDisabled}>
+            {actionLabels[selectedAction]} を確定
+          </Button>
         </div>
       </div>
     </div>

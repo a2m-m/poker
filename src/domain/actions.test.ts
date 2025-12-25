@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { calcCallNeeded } from './bets';
-import { applyAllIn, applyBasicAction, applyBetOrRaise, getAvailableActions } from './actions';
+import {
+  applyAllIn,
+  applyBasicAction,
+  applyBetOrRaise,
+  describeActionAvailability,
+  getAvailableActions,
+} from './actions';
 import type { HandState, Player } from './types';
 
 const buildPlayer = (overrides: Partial<Player> = {}): Player => ({
@@ -95,6 +101,39 @@ describe('getAvailableActions', () => {
 
     expect(getAvailableActions(hand, folded)).toEqual([]);
     expect(getAvailableActions(hand, allIn)).toEqual([]);
+  });
+});
+
+describe('describeActionAvailability', () => {
+  it('CHECK不可のとき理由付きで返す', () => {
+    const player = buildPlayer();
+    const hand = buildHand({ currentBet: 400, contribThisStreet: { p1: 0, p2: 0 } });
+
+    const availability = describeActionAvailability(hand, player);
+
+    const check = availability.find((entry) => entry.type === 'CHECK');
+    expect(check?.available).toBe(false);
+    expect(check?.reason).toContain('チェック不可');
+  });
+
+  it('再オープン不可ではRAISEが無効化される', () => {
+    const player = buildPlayer({ stack: 500 });
+    const hand = buildHand({ currentBet: 200, reopenAllowed: false });
+
+    const availability = describeActionAvailability(hand, player);
+
+    const raise = availability.find((entry) => entry.type === 'RAISE');
+    expect(raise?.available).toBe(false);
+    expect(raise?.reason).toContain('再オープン不可');
+  });
+
+  it('非アクティブは全アクションが不可になる', () => {
+    const player = buildPlayer({ state: 'FOLDED' });
+    const hand = buildHand();
+
+    const availability = describeActionAvailability(hand, player);
+
+    expect(availability.every((entry) => entry.available === false)).toBe(true);
   });
 });
 
