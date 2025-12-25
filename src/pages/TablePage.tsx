@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { ActionModal } from '../components/ActionModal';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
+import { PotPanel } from '../components/PotPanel';
 import { PlayerCard, type PlayerRole, type PlayerStatus } from '../components/PlayerCard';
 import { StatusBar } from '../components/StatusBar';
 import { TurnPanel } from '../components/TurnPanel';
@@ -36,9 +37,6 @@ const getRoleForIndex = (hand: { dealerIndex: number; sbIndex: number; bbIndex: 
   if (seatIndex === hand.bbIndex) return 'BB';
   return undefined;
 };
-
-const calcPotTotal = (pot: { main: number; sides: { amount: number }[] }) =>
-  pot.main + pot.sides.reduce((sum, side) => sum + side.amount, 0);
 
 const cloneHandState = (hand: HandState): HandState => JSON.parse(JSON.stringify(hand)) as HandState;
 
@@ -79,7 +77,7 @@ export function TablePage({ description }: TablePageProps) {
   const minRaiseTo = calcMinRaiseTo(hand);
   const canRaise = minRaiseTo !== null;
   const minRaiseText = minRaiseTo?.toLocaleString() ?? '—';
-  const potTotal = calcPotTotal(hand.pot);
+  const potTotal = hand.pot.main + hand.pot.sides.reduce((sum, side) => sum + side.amount, 0);
   const buttonPlayer = players.find((player) => player.seatIndex === hand.dealerIndex)?.name ?? '—';
   const smallBlindPlayer = players.find((player) => player.seatIndex === hand.sbIndex)?.name ?? '—';
   const bigBlindPlayer = players.find((player) => player.seatIndex === hand.bbIndex)?.name ?? '—';
@@ -201,28 +199,13 @@ export function TablePage({ description }: TablePageProps) {
       </Card>
 
       <div className={styles.topGrid}>
-        <Card
-          eyebrow="Pot"
-          title="ポット表示"
-          description="合計と内訳をまとめた中央エリアの想定です。折りたたみ可能なリストを置く余白を確保しています。"
-        >
-          <div className={styles.potSummary}>
-            <div>
-              <p className={styles.potLabel}>ポット合計</p>
-              <p className={styles.potTotal}>{potTotal.toLocaleString()}</p>
-            </div>
-            <div className={styles.potBreakdown}>
-              <span className={styles.badge}>Main</span>
-              <span className={styles.potDetail}>メイン {hand.pot.main.toLocaleString()}</span>
-              {hand.pot.sides.map((side, index) => (
-                <span key={index} className={styles.potDetail}>
-                  サイド{index + 1} {side.amount.toLocaleString()}
-                </span>
-              ))}
-              {hand.pot.sides.length === 0 && <span className={styles.toggleHint}>（サイドポットは未発生です）</span>}
-            </div>
-          </div>
-        </Card>
+      <Card
+        eyebrow="Pot"
+        title="ポット表示"
+        description="合計と内訳をまとめた中央エリアの想定です。折りたたみ可能なリストを置く余白を確保しています。"
+      >
+          <PotPanel pot={hand.pot} players={players} />
+      </Card>
 
         <Card
           eyebrow="Turn"

@@ -34,18 +34,6 @@
   font-size: 0.95rem;
 }
 
-.badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.15rem 0.5rem;
-  border-radius: 999px;
-  background: rgba(124, 159, 248, 0.15);
-  border: 1px solid rgba(124, 159, 248, 0.4);
-  color: #d9e5ff;
-  font-size: 0.85rem;
-}
-
 .topGrid {
   display: grid;
   gap: var(--grid-gap);
@@ -56,48 +44,6 @@
   .topGrid {
     grid-template-columns: 1fr;
   }
-}
-
-.potSummary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.75rem;
-  border-radius: 12px;
-  background: var(--surface-weak);
-  border: 1px dashed var(--border-normal);
-}
-
-.potLabel {
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-}
-
-.potTotal {
-  margin: 0.2rem 0 0;
-  font-size: 1.6rem;
-  font-weight: 700;
-}
-
-.potBreakdown {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  align-items: flex-start;
-}
-
-.potDetail {
-  font-size: 0.95rem;
-  color: var(--text-secondary);
-}
-
-.toggleHint {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-}
-
 .mainGrid {
   display: grid;
   gap: var(--grid-gap);
