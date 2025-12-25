@@ -151,7 +151,7 @@ export function HomePage({ description }: HomePageProps) {
       <ConfirmDialog
         open={isResetDialogOpen}
         title="保存データをリセットしますか？"
-        message="確認のみのダイアログです。実際の削除処理は後続タスクで実装予定です。"
+        message="保存済みのゲーム状態を削除します。リロード後も再開できなくなります。"
         confirmLabel="リセットする"
         cancelLabel="やめておく"
         tone="danger"
