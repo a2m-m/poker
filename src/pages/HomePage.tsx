@@ -70,7 +70,7 @@ export function HomePage({ description }: HomePageProps) {
             <p className={styles.note}>セットアップで開始すると「前回を再開」が有効になります。</p>
           )}
           <p className={styles.note}>
-            クリック時の遷移や確認ダイアログのみを仕込んだ静的バージョンです。保存や破棄の実処理は後続タスクで実装します。
+            セットアップで開始したゲーム状態はブラウザに一時保存され、リロード後でも「前回を再開」からテーブルに戻れるようになりました。
           </p>
         </Card>
 
