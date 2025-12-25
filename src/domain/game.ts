@@ -2,6 +2,8 @@ import { calcBlindIndices } from './positions';
 import { calcFirstToActPlayerId } from './turns';
 import { GameState, GameSettings, HandState, Player, PlayerId, Street } from './types';
 
+const cloneHandState = (hand: HandState): HandState => JSON.parse(JSON.stringify(hand)) as HandState;
+
 export type PlayerSetup = {
   id: PlayerId;
   name: string;
@@ -122,11 +124,20 @@ const calcNextDealerIndex = (players: Player[], currentDealerIndex: number): num
 };
 
 export const startNextHand = (game: GameState): GameState => {
+  const previousHandSnapshot = cloneHandState(game.hand);
   const players = game.players.map(toActiveOrAllIn);
   const dealerIndex = calcNextDealerIndex(players, game.hand.dealerIndex);
   const handNumber = game.hand.handNumber + 1;
 
   const hand = buildHandState(game.settings, players, dealerIndex, handNumber);
+  hand.actionLog = [
+    {
+      seq: 1,
+      type: 'START_HAND',
+      street: hand.street,
+      snapshot: previousHandSnapshot,
+    },
+  ];
 
   return {
     ...game,

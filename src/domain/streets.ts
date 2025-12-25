@@ -1,6 +1,8 @@
 import { calcFirstToActPlayerId } from './turns';
 import type { ActionLogEntry, GameSettings, HandState, Player, Street } from './types';
 
+const cloneHandState = (hand: HandState): HandState => JSON.parse(JSON.stringify(hand)) as HandState;
+
 const nextStreet = (street: Street): Street => {
   switch (street) {
     case 'PREFLOP':
@@ -53,6 +55,7 @@ export const advanceStreet = (
     throw new Error('ストリート終了条件を満たしていません。');
   }
 
+  const handSnapshot = cloneHandState(hand);
   const next = nextStreet(hand.street);
 
   hand.street = next;
@@ -71,6 +74,7 @@ export const advanceStreet = (
     seq: hand.actionLog.length + 1,
     type: 'ADVANCE_STREET',
     street: next,
+    snapshot: handSnapshot,
   };
   hand.actionLog.push(log);
   return log;

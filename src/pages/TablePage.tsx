@@ -146,6 +146,8 @@ export function TablePage({ description }: TablePageProps) {
       const lastEntry = prev.hand.actionLog.at(-1);
       const trimmedLog = prev.hand.actionLog.slice(0, -1);
 
+      const restoredActionLog = lastEntry?.snapshot?.actionLog ?? trimmedLog;
+
       if (!lastEntry?.snapshot) {
         return {
           ...prev,
@@ -160,7 +162,7 @@ export function TablePage({ description }: TablePageProps) {
         ...prev,
         hand: {
           ...lastEntry.snapshot,
-          actionLog: trimmedLog,
+          actionLog: restoredActionLog,
         },
       };
     });
