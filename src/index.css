@@ -1,5 +1,7 @@
 @import './styles/theme.css';
 
 #root {
+  /* iPad Safari でアドレスバー表示/非表示に伴う高さ変動を吸収するため、動的ビューポートを優先 */
   min-height: 100vh;
+  min-height: 100dvh;
 }
