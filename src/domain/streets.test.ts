@@ -93,6 +93,17 @@ describe('advanceStreet', () => {
     expect(hand.actionLog).toHaveLength(4);
   });
 
+  it('ストリート遷移前のスナップショットをログに保持する', () => {
+    const players = buildPlayers();
+    const hand = buildHand();
+    const before = JSON.parse(JSON.stringify(hand));
+
+    advanceStreet(players, hand, baseSettings);
+
+    const snapshot = hand.actionLog.at(-1)?.snapshot;
+    expect(snapshot).toEqual(before);
+  });
+
   it('条件未達のまま呼び出すとエラーになる', () => {
     const players = buildPlayers();
     const hand = buildHand({

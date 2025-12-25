@@ -139,4 +139,35 @@ describe('createNewGame', () => {
       p3: 0,
     });
   });
+
+  it('ハンド開始時に前ハンドのスナップショットをログに残す', () => {
+    const players: PlayerSetup[] = [
+      { id: 'p1', name: 'ボタン', stack: 10000 },
+      { id: 'p2', name: 'スモール', stack: 12000 },
+      { id: 'p3', name: 'ビッグ', stack: 8000 },
+    ];
+
+    const current = createNewGame(baseSettings, players);
+    const progressed: typeof current = {
+      ...current,
+      hand: {
+        ...current.hand,
+        street: 'TURN',
+        currentBet: 500,
+        lastRaiseSize: 500,
+        actionLog: [
+          { seq: 1, type: 'CALL', playerId: 'p1', amount: 200, street: 'PREFLOP' },
+          { seq: 2, type: 'CALL', playerId: 'p2', amount: 200, street: 'PREFLOP' },
+          { seq: 3, type: 'CHECK', playerId: 'p3', street: 'PREFLOP' },
+          { seq: 4, type: 'ADVANCE_STREET', street: 'TURN' },
+        ],
+      },
+    };
+
+    const next = startNextHand(progressed);
+
+    expect(next.hand.actionLog).toHaveLength(1);
+    expect(next.hand.actionLog[0]).toMatchObject({ type: 'START_HAND', street: 'PREFLOP' });
+    expect(next.hand.actionLog[0]?.snapshot).toEqual(progressed.hand);
+  });
 });
