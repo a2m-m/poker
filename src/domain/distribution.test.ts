@@ -95,4 +95,14 @@ describe('calcPayoutShares', () => {
 
     expect(payouts).toEqual({});
   });
+
+  it('ボタンを基準に時計回りで端数を分配する', () => {
+    const payouts = calcPayoutShares(players, 3, 5, ['p1', 'p2', 'p3']);
+
+    expect(payouts).toEqual({
+      p1: 2, // BTNに最も近いp1が端数を獲得
+      p2: 2,
+      p3: 1,
+    });
+  });
 });
