@@ -1,3 +1,4 @@
+import { calcBlindIndices } from './positions';
 import { GameState, GameSettings, HandState, Player, PlayerId, Street } from './types';
 
 export type PlayerSetup = {
@@ -40,22 +41,6 @@ const payBlind = (
   return pay;
 };
 
-const calcBlindIndices = (playerCount: number, dealerIndex: number) => {
-  if (playerCount < 2) {
-    throw new Error('ゲーム開始には2人以上が必要です。');
-  }
-
-  if (playerCount === 2) {
-    const sbIndex = dealerIndex;
-    const bbIndex = (dealerIndex + 1) % playerCount;
-    return { sbIndex, bbIndex };
-  }
-
-  const sbIndex = (dealerIndex + 1) % playerCount;
-  const bbIndex = (dealerIndex + 2) % playerCount;
-  return { sbIndex, bbIndex };
-};
-
 const findNextActivePlayerId = (players: Player[], startIndex: number): PlayerId => {
   for (let i = 0; i < players.length; i += 1) {
     const index = (startIndex + i) % players.length;
@@ -80,7 +65,7 @@ const buildInitialHandState = (
   dealerIndex: number,
 ): HandState => {
   const contribThisStreet = initializeContrib(players);
-  const { sbIndex, bbIndex } = calcBlindIndices(players.length, dealerIndex);
+  const { sbIndex, bbIndex } = calcBlindIndices(players, dealerIndex);
 
   const sbPaid = payBlind(players, contribThisStreet, sbIndex, settings.sb);
   const bbPaid = payBlind(players, contribThisStreet, bbIndex, settings.bb);
