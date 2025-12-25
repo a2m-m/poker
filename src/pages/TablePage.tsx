@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { ActionModal } from '../components/ActionModal';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
@@ -41,6 +41,7 @@ const getRoleForIndex = (hand: { dealerIndex: number; sbIndex: number; bbIndex: 
 const cloneHandState = (hand: HandState): HandState => JSON.parse(JSON.stringify(hand)) as HandState;
 
 export function TablePage({ description }: TablePageProps) {
+  const navigate = useNavigate();
   const { gameState, updateGameState } = useGameState();
   const [actionModalOpen, setActionModalOpen] = useState(false);
 
@@ -269,9 +270,15 @@ export function TablePage({ description }: TablePageProps) {
               <Button variant="secondary" onClick={appendDemoLog}>
                 デモログを1件追加
               </Button>
-              <Button variant="secondary">ログを確認</Button>
-              <Button variant="secondary">ショーダウンへ</Button>
-              <Button variant="danger">設定 / リセット</Button>
+              <Button variant="secondary" onClick={() => navigate('/log')}>
+                ログを確認
+              </Button>
+              <Button variant="secondary" onClick={() => navigate('/showdown')}>
+                ショーダウンへ
+              </Button>
+              <Button variant="danger" onClick={() => navigate('/settings')}>
+                設定 / リセット
+              </Button>
             </div>
             <div className={styles.navLinks}>
               <NavLink to="/log" className={styles.textLink}>
@@ -287,6 +294,64 @@ export function TablePage({ description }: TablePageProps) {
           </div>
         </Card>
       </div>
+
+      <Card
+        eyebrow="Recovery"
+        title="例外時の復旧ガイド"
+        description="整合性が崩れたときに試せる導線をまとめました。Undo / ログ / 破棄の順に確認してください。"
+      >
+        <div className={styles.recoveryList}>
+          <div className={styles.recoveryItem}>
+            <div>
+              <p className={styles.recoveryTitle}>Undo で直前の状態に戻す</p>
+              <p className={styles.recoveryBody}>
+                手番確定前のスナップショットを利用し、最後の 1 件だけ巻き戻します。画面が乱れた場合でもまずは Undo を試してくださ
+さい。
+              </p>
+            </div>
+            <div className={styles.recoveryActions}>
+              <Button variant="undo" onClick={handleUndo}>
+                直近の操作を取り消す
+              </Button>
+              <span className={styles.recoveryNote}>現在のログ件数: {hand.actionLog.length} 件</span>
+            </div>
+          </div>
+
+          <div className={styles.recoveryItem}>
+            <div>
+              <p className={styles.recoveryTitle}>ログで直近の手順を確認</p>
+              <p className={styles.recoveryBody}>
+                直前の入力内容を確認し、必要なら再入力してください。ログにはスナップショット有無も記録されており、巻き戻しやすい
+構成になっています。
+              </p>
+            </div>
+            <div className={styles.recoveryActions}>
+              <Button variant="secondary" onClick={() => navigate('/log')}>
+                ログページを開く
+              </Button>
+              <NavLink to="/log" className={styles.textLink}>
+                /log で時系列を確認
+              </NavLink>
+            </div>
+          </div>
+
+          <div className={styles.recoveryItem}>
+            <div>
+              <p className={styles.recoveryTitle}>ハンドを破棄してやり直す</p>
+              <p className={styles.recoveryBody}>
+                リロードしても復旧しない場合は、設定ページの「保存データを破棄」または「表示設定を初期化」からクリーンな状態に戻
+してください。
+              </p>
+            </div>
+            <div className={styles.recoveryActions}>
+              <Button variant="danger" onClick={() => navigate('/settings')}>
+                破棄/リセットを開く
+              </Button>
+              <span className={styles.recoveryNote}>破棄後はセットアップから再開できます</span>
+            </div>
+          </div>
+        </div>
+      </Card>
 
       <ActionModal
         open={actionModalOpen}
