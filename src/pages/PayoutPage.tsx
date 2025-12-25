@@ -1,3 +1,5 @@
+import { calcPayoutShares, distribute, type PotWinners } from '../domain/distribution';
+import type { Player, PotState } from '../domain/types';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import styles from './PayoutPage.module.css';
@@ -6,12 +8,29 @@ interface PayoutPageProps {
   description: string;
 }
 
+type PayoutPlayer = {
+  id: string;
+  name: string;
+  seat: string;
+  seatIndex: number;
+  stackBefore: number;
+};
+
 type WinnerShare = {
   playerId: string;
   name: string;
   seat: string;
   share: number;
   updatedStack: number;
+};
+
+type PotEntry = {
+  id: string;
+  label: string;
+  amount: number;
+  note: string;
+  winnerIds: string[];
+  eligiblePlayerIds: string[];
 };
 
 type PotResult = {
@@ -32,90 +51,115 @@ type StackUpdate = {
   memo: string;
 };
 
-const potResults: PotResult[] = [
+const players: PayoutPlayer[] = [
+  { id: 'p1', name: '佐藤', seat: 'BTN', seatIndex: 0, stackBefore: 18400 },
+  { id: 'p2', name: '鈴木', seat: 'SB', seatIndex: 1, stackBefore: 15200 },
+  { id: 'p3', name: '高橋', seat: 'BB', seatIndex: 2, stackBefore: 19200 },
+  { id: 'p4', name: '田中', seat: 'HJ', seatIndex: 3, stackBefore: 1800 },
+  { id: 'p5', name: '伊藤', seat: 'CO', seatIndex: 4, stackBefore: 7800 },
+];
+
+const pots: PotEntry[] = [
   {
     id: 'main',
     label: 'メインポット',
     amount: 8600,
     note: 'リバーまで残った 5 名が対象。BB のトップペアがそのまま勝利しました。',
-    winners: [
-      { playerId: 'p3', name: '高橋', seat: 'BB', share: 8600, updatedStack: 27800 },
-    ],
+    winnerIds: ['p3'],
+    eligiblePlayerIds: ['p1', 'p2', 'p3', 'p4', 'p5'],
   },
   {
     id: 'side1',
     label: 'サイドポット1',
     amount: 4200,
     note: 'ターンでのオールインにより 4 名が eligible。BTN / SB が同点で分配。',
-    winners: [
-      { playerId: 'p1', name: '佐藤', seat: 'BTN', share: 2100, updatedStack: 20500 },
-      { playerId: 'p2', name: '鈴木', seat: 'SB', share: 2100, updatedStack: 17300 },
-    ],
+    winnerIds: ['p1', 'p2'],
+    eligiblePlayerIds: ['p1', 'p2', 'p3', 'p4'],
   },
   {
     id: 'side2',
     label: 'サイドポット2',
     amount: 1800,
     note: '田中のショートスタックが作ったサイド。BTN が単独で回収。',
-    winners: [
-      { playerId: 'p1', name: '佐藤', seat: 'BTN', share: 1800, updatedStack: 22300 },
-    ],
+    winnerIds: ['p1'],
+    eligiblePlayerIds: ['p1', 'p2', 'p3'],
   },
 ];
 
-const stackUpdates: StackUpdate[] = [
-  {
-    id: 'p1',
-    name: '佐藤',
-    seat: 'BTN',
-    stackBefore: 18400,
-    delta: 3900,
-    stackAfter: 22300,
-    memo: 'サイドポット 2 つを獲得し、ショートを一気に脱出。',
-  },
-  {
-    id: 'p2',
-    name: '鈴木',
-    seat: 'SB',
-    stackBefore: 15200,
-    delta: 2100,
-    stackAfter: 17300,
-    memo: '同点配分でスタックを維持。次ハンドは SB で再開します。',
-  },
-  {
-    id: 'p3',
-    name: '高橋',
-    seat: 'BB',
-    stackBefore: 19200,
-    delta: 8600,
-    stackAfter: 27800,
-    memo: 'メインポットを総取りしてチップリーダーに。',
-  },
-  {
-    id: 'p4',
-    name: '田中',
-    seat: 'HJ',
-    stackBefore: 1800,
-    delta: -1800,
-    stackAfter: 0,
-    memo: 'オールインが届かず、ショートスタックのままバスト。次ゲームから除外されます。',
-  },
-  {
-    id: 'p5',
-    name: '伊藤',
-    seat: 'CO',
-    stackBefore: 7800,
-    delta: -3600,
-    stackAfter: 4200,
-    memo: 'リバーでドローミス。次ストリートは 4.2K で再スタート。',
-  },
-];
+const toDomainPlayers = (entries: PayoutPlayer[]): Player[] =>
+  entries.map((player) => ({
+    id: player.id,
+    name: player.name,
+    seatIndex: player.seatIndex,
+    stack: player.stackBefore,
+    state: 'ACTIVE' as const,
+  }));
 
-const highlightWinners: WinnerShare[] = [
-  { playerId: 'p3', name: '高橋', seat: 'BB', share: 8600, updatedStack: 27800 },
-  { playerId: 'p1', name: '佐藤', seat: 'BTN', share: 3900, updatedStack: 22300 },
-  { playerId: 'p2', name: '鈴木', seat: 'SB', share: 2100, updatedStack: 17300 },
-];
+const dealerIndex = players.find((player) => player.seat === 'BTN')?.seatIndex ?? 0;
+
+const potState: PotState = {
+  main: pots[0]?.amount ?? 0,
+  sides: pots.slice(1).map((pot) => ({ amount: pot.amount, eligiblePlayerIds: pot.eligiblePlayerIds })),
+};
+
+const winners: PotWinners = {
+  main: pots[0]?.winnerIds ?? [],
+  sides: pots.slice(1).map((pot) => pot.winnerIds),
+};
+
+const domainPlayers = toDomainPlayers(players);
+
+const payouts = distribute(domainPlayers, dealerIndex, potState, winners);
+
+const potResults: PotResult[] = pots.map((pot) => {
+  const shares = calcPayoutShares(domainPlayers, dealerIndex, pot.amount, pot.winnerIds);
+  const winnersWithShare: WinnerShare[] = pot.winnerIds.map((playerId) => {
+    const player = players.find((p) => p.id === playerId);
+    const share = shares[playerId] ?? 0;
+    const updatedStack = (player?.stackBefore ?? 0) + (payouts[playerId] ?? 0);
+
+    return {
+      playerId,
+      name: player?.name ?? '不明なプレイヤー',
+      seat: player?.seat ?? '-',
+      share,
+      updatedStack,
+    };
+  });
+
+  return {
+    id: pot.id,
+    label: pot.label,
+    amount: pot.amount,
+    note: pot.note,
+    winners: winnersWithShare,
+  };
+});
+
+const stackUpdates: StackUpdate[] = players.map((player) => {
+  const delta = payouts[player.id] ?? 0;
+  return {
+    id: player.id,
+    name: player.name,
+    seat: player.seat,
+    stackBefore: player.stackBefore,
+    delta,
+    stackAfter: player.stackBefore + delta,
+    memo: delta > 0 ? '配当を反映しました。' : '今回の配当はありません。',
+  };
+});
+
+const highlightWinners: WinnerShare[] = stackUpdates
+  .filter((player) => player.delta > 0)
+  .sort((a, b) => b.delta - a.delta)
+  .slice(0, 3)
+  .map((player) => ({
+    playerId: player.id,
+    name: player.name,
+    seat: player.seat,
+    share: player.delta,
+    updatedStack: player.stackAfter,
+  }));
 
 export function PayoutPage({ description }: PayoutPageProps) {
   const totalPayout = potResults.reduce((sum, pot) => sum + pot.amount, 0);

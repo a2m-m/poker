@@ -43,6 +43,17 @@ const addPayout = (
   });
 };
 
+export const calcPayoutShares = (
+  players: Player[],
+  dealerIndex: number,
+  amount: number,
+  winnerIds: PlayerId[],
+): Record<PlayerId, number> => {
+  const payouts: Record<PlayerId, number> = {};
+  addPayout(payouts, players, dealerIndex, amount, winnerIds);
+  return payouts;
+};
+
 /**
  * ポットを分配し、プレイヤーごとの獲得額を返します。
  * 仕様：docs/specification.md セクション7.10「分配と端数処理」準拠
