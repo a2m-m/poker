@@ -6,42 +6,83 @@ import { Card } from '../components/Card';
 import { PlayerCard, type PlayerRole, type PlayerStatus } from '../components/PlayerCard';
 import { StatusBar } from '../components/StatusBar';
 import { TurnPanel } from '../components/TurnPanel';
+import { PlayerState, Street } from '../domain/types';
+import { useGameState } from '../state/GameStateContext';
 import styles from './TablePage.module.css';
 
 interface TablePageProps {
   description: string;
 }
 
-type PlayerStub = {
-  id: string;
-  name: string;
-  role?: PlayerRole;
-  stack: number;
-  committed: number;
-  status: PlayerStatus;
-  needed: number;
+const streetLabels: Record<Street, string> = {
+  PREFLOP: 'プリフロップ',
+  FLOP: 'フロップ',
+  TURN: 'ターン',
+  RIVER: 'リバー',
+  SHOWDOWN: 'ショーダウン',
+  PAYOUT: '配当',
 };
 
-const players: PlayerStub[] = [
-  { id: 'p1', name: '佐藤', role: 'D', stack: 18500, committed: 400, needed: 0, status: '参加中' },
-  { id: 'p2', name: '鈴木', role: 'SB', stack: 19600, committed: 200, needed: 600, status: '参加中' },
-  { id: 'p3', name: '高橋', role: 'BB', stack: 17300, committed: 800, needed: 0, status: '参加中' },
-  { id: 'p4', name: '田中', stack: 12000, committed: 800, needed: 0, status: 'オールイン' },
-  { id: 'p5', name: '伊藤', stack: 9600, committed: 400, needed: 400, status: '参加中' },
-];
+const statusText: Record<PlayerState, PlayerStatus> = {
+  ACTIVE: '参加中',
+  FOLDED: 'フォールド',
+  ALL_IN: 'オールイン',
+};
+
+const getRoleForIndex = (hand: { dealerIndex: number; sbIndex: number; bbIndex: number }, seatIndex: number): PlayerRole | undefined => {
+  if (seatIndex === hand.dealerIndex) return 'D';
+  if (seatIndex === hand.sbIndex) return 'SB';
+  if (seatIndex === hand.bbIndex) return 'BB';
+  return undefined;
+};
+
+const calcCallNeeded = (hand: { currentBet: number; contribThisStreet: Record<string, number> }, playerId: string) => {
+  const contributed = hand.contribThisStreet[playerId] ?? 0;
+  return Math.max(0, hand.currentBet - contributed);
+};
+
+const calcPotTotal = (pot: { main: number; sides: { amount: number }[] }) =>
+  pot.main + pot.sides.reduce((sum, side) => sum + side.amount, 0);
 
 export function TablePage({ description }: TablePageProps) {
+  const { gameState } = useGameState();
   const [actionModalOpen, setActionModalOpen] = useState(false);
-  const turnPlayer = players.find((player) => player.id === 'p5');
-  const minRaiseDisplay = 1200;
-  const currentBet = 800;
-  const turnPlayerName = turnPlayer?.name ?? '—';
-  const requiredText = turnPlayer
-    ? `コール ${turnPlayer.needed.toLocaleString()}（継続）`
-    : 'コール 0（継続）';
-  const availableText = turnPlayer
-    ? `チェック / レイズは ${minRaiseDisplay.toLocaleString()} 以上 / オールイン ${turnPlayer.stack.toLocaleString()}`
-    : 'チェック / レイズ / オールイン';
+
+  if (!gameState) {
+    return (
+      <div className={styles.page}>
+        <header className={styles.header}>
+          <div>
+            <p className={styles.eyebrow}>/table</p>
+            <h2 className={styles.title}>テーブル</h2>
+          </div>
+          <p className={styles.lead}>{description}</p>
+          <p className={styles.note}>セットアップで開始すると現在のプレイヤーとブラインドがここに表示されます。</p>
+        </header>
+
+        <Card
+          eyebrow="Game State"
+          title="ゲーム状態が見つかりません"
+          description="セットアップページで人数とブラインドを入力し、開始してください。"
+        >
+          <p className={styles.sectionDescription}>状態を共有するため、まず /setup で新規開始を押してください。</p>
+          <NavLink to="/setup" className={styles.textLink}>
+            セットアップへ移動
+          </NavLink>
+        </Card>
+      </div>
+    );
+  }
+
+  const { players, hand } = gameState;
+  const turnPlayer = players.find((player) => player.id === hand.currentTurnPlayerId);
+  const turnRole = turnPlayer ? getRoleForIndex(hand, turnPlayer.seatIndex) : undefined;
+  const callNeeded = turnPlayer ? calcCallNeeded(hand, turnPlayer.id) : 0;
+  const minRaiseTo = hand.currentBet + hand.lastRaiseSize;
+  const potTotal = calcPotTotal(hand.pot);
+  const buttonPlayer = players.find((player) => player.seatIndex === hand.dealerIndex)?.name ?? '—';
+  const smallBlindPlayer = players.find((player) => player.seatIndex === hand.sbIndex)?.name ?? '—';
+  const bigBlindPlayer = players.find((player) => player.seatIndex === hand.bbIndex)?.name ?? '—';
 
   return (
     <div className={styles.page}>
@@ -52,8 +93,8 @@ export function TablePage({ description }: TablePageProps) {
         </div>
         <p className={styles.lead}>{description}</p>
         <p className={styles.note}>
-          状態バー / ポット表示 / プレイヤーリスト / 手番エリアを配置したレイアウトデモです。まだロジックは持たせず、
-          「手番・必要・可能」の表示位置とアクションボタンのまとまりを固定しています。
+          状態バー / ポット表示 / プレイヤーリスト / 手番エリアを配置したレイアウトデモです。セットアップで入力した値を
+          そのまま反映し、手番や必要額が更新される様子を確認できます。
         </p>
       </header>
 
@@ -63,15 +104,15 @@ export function TablePage({ description }: TablePageProps) {
         description="ハンド進行中に常時表示するステータスの配置サンプルです。"
       >
         <StatusBar
-          handNumber={12}
-          street="ターン"
+          handNumber={hand.handNumber}
+          street={streetLabels[hand.street]}
           goal="全員の投入額を揃えます"
-          currentBet={800}
-          callNeeded={400}
-          minRaise={1200}
-          buttonPlayer="佐藤"
-          smallBlindPlayer="鈴木"
-          bigBlindPlayer="高橋"
+          currentBet={hand.currentBet}
+          callNeeded={callNeeded}
+          minRaise={minRaiseTo}
+          buttonPlayer={buttonPlayer}
+          smallBlindPlayer={smallBlindPlayer}
+          bigBlindPlayer={bigBlindPlayer}
         />
       </Card>
 
@@ -84,13 +125,17 @@ export function TablePage({ description }: TablePageProps) {
           <div className={styles.potSummary}>
             <div>
               <p className={styles.potLabel}>ポット合計</p>
-              <p className={styles.potTotal}>5,200</p>
+              <p className={styles.potTotal}>{potTotal.toLocaleString()}</p>
             </div>
             <div className={styles.potBreakdown}>
               <span className={styles.badge}>Main</span>
-              <span className={styles.potDetail}>メイン 3,200</span>
-              <span className={styles.potDetail}>サイド1 2,000</span>
-              <span className={styles.toggleHint}>（内訳の折りたたみ想定）</span>
+              <span className={styles.potDetail}>メイン {hand.pot.main.toLocaleString()}</span>
+              {hand.pot.sides.map((side, index) => (
+                <span key={index} className={styles.potDetail}>
+                  サイド{index + 1} {side.amount.toLocaleString()}
+                </span>
+              ))}
+              {hand.pot.sides.length === 0 && <span className={styles.toggleHint}>（サイドポットは未発生です）</span>}
             </div>
           </div>
         </Card>
@@ -101,10 +146,12 @@ export function TablePage({ description }: TablePageProps) {
           description="「手番 / 必要 / 可能」を3行で固定表示する領域です。ボタンとは分けて目視しやすくしています。"
         >
           <TurnPanel
-            turnPlayer={turnPlayerName}
-            positionLabel="UTG"
-            requiredText={requiredText}
-            availableText={availableText}
+            turnPlayer={turnPlayer?.name ?? '—'}
+            positionLabel={turnRole ?? '参加者'}
+            requiredText={`コール ${callNeeded.toLocaleString()}（継続）`}
+            availableText={`チェック / レイズは ${minRaiseTo.toLocaleString()} 以上 / オールイン ${(
+              turnPlayer?.stack ?? 0
+            ).toLocaleString()}`}
           />
         </Card>
       </div>
@@ -113,29 +160,34 @@ export function TablePage({ description }: TablePageProps) {
         <Card
           eyebrow="Players"
           title="プレイヤー表示"
-          description="席順に並べたプレイヤーカードのダミーです。必要額やD/SB/BBバッジの表示場所を確認できます。"
+          description="席順に並べたプレイヤーカードです。必要額やD/SB/BBバッジをセットアップの値から反映します。"
         >
           <div className={styles.playerList} aria-label="プレイヤー一覧">
-            {players.map((player) => (
-              <PlayerCard
-                key={player.id}
-                name={player.name}
-                role={player.role}
-                stack={player.stack}
-                committed={player.committed}
-                needed={player.needed}
-                status={player.status}
-                isActive={player.id === turnPlayer?.id}
-                turnNote={player.id === turnPlayer?.id ? 'このプレイヤーの手番です。' : undefined}
-              />
-            ))}
+            {players.map((player) => {
+              const role = getRoleForIndex(hand, player.seatIndex);
+              const committed = hand.contribThisStreet[player.id] ?? 0;
+              const needed = calcCallNeeded(hand, player.id);
+              return (
+                <PlayerCard
+                  key={player.id}
+                  name={player.name}
+                  role={role}
+                  stack={player.stack}
+                  committed={committed}
+                  needed={needed}
+                  status={statusText[player.state]}
+                  isActive={player.id === hand.currentTurnPlayerId}
+                  turnNote={player.id === hand.currentTurnPlayerId ? 'このプレイヤーの手番です。' : undefined}
+                />
+              );
+            })}
           </div>
         </Card>
 
         <Card
           eyebrow="Actions"
           title="アクション入力の枠"
-          description="ボタン群と導線をまとめるアクションバーの配置例です。実処理は後続で接続します。"
+          description="ボタン群と導線をまとめるアクションバーの配置例です。セットアップからの状態を使ってモーダルを開きます。"
         >
           <div className={styles.actionStack}>
             <div className={styles.actionButtons}>
@@ -160,8 +212,8 @@ export function TablePage({ description }: TablePageProps) {
               </NavLink>
             </div>
             <p className={styles.actionNote}>
-              モーダルを開くとアクション候補とベット/レイズ時の金額入力UIが表示されます。ここでは見た目と導線のみを
-              固定しています。
+              モーダルを開くとアクション候補とベット/レイズ時の金額入力UIが表示されます。ここでは見た目と導線のみを固定し
+              つつ、共有状態から値を受け取っています。
             </p>
           </div>
         </Card>
@@ -170,13 +222,13 @@ export function TablePage({ description }: TablePageProps) {
       <ActionModal
         open={actionModalOpen}
         onClose={() => setActionModalOpen(false)}
-        playerName={turnPlayerName}
-        positionLabel="UTG"
-        potSize={5200}
-        currentBet={currentBet}
-        callAmount={turnPlayer?.needed ?? 0}
-        minBet={400}
-        minRaiseTo={minRaiseDisplay}
+        playerName={turnPlayer?.name ?? '—'}
+        positionLabel={turnRole ?? '参加者'}
+        potSize={potTotal}
+        currentBet={hand.currentBet}
+        callAmount={callNeeded}
+        minBet={hand.currentBet}
+        minRaiseTo={minRaiseTo}
         maxAmount={turnPlayer?.stack ?? 0}
       />
     </div>

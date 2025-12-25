@@ -2,6 +2,9 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
+import { createNewGame, type PlayerSetup } from '../domain/game';
+import { type GameSettings } from '../domain/types';
+import { useGameState } from '../state/GameStateContext';
 import styles from './SetupPage.module.css';
 
 interface SetupPageProps {
@@ -16,6 +19,7 @@ type PlayerDraft = {
 
 export function SetupPage({ description }: SetupPageProps) {
   const navigate = useNavigate();
+  const { setGameState } = useGameState();
   const [players, setPlayers] = useState<PlayerDraft[]>([
     { id: 'p1', name: '佐藤', stack: 20000 },
     { id: 'p2', name: '鈴木', stack: 20000 },
@@ -67,7 +71,23 @@ export function SetupPage({ description }: SetupPageProps) {
       setInlineMessage('2人未満のため開始できません。プレイヤーを追加してください。');
       return;
     }
-    setInlineMessage('デモとしてテーブル画面へ遷移します。設定値の反映は後続タスクで実装します。');
+
+    const playerSetups: PlayerSetup[] = players.map((player, index) => ({
+      id: player.id || `player-${index + 1}`,
+      name: player.name.trim() || `プレイヤー${index + 1}`,
+      stack: Math.max(0, player.stack),
+    }));
+
+    const settings: GameSettings = {
+      sb: Math.max(0, sb),
+      bb: Math.max(0, bb),
+      roundingRule: 'BUTTON_NEAR',
+      burnCard: true,
+    };
+
+    const gameState = createNewGame(settings, playerSetups);
+    setGameState(gameState);
+    setInlineMessage('現在の設定からゲーム状態を生成し、テーブル画面に反映しました。');
     navigate('/table');
   };
 
