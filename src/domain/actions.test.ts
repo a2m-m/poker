@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { calcCallNeeded } from './bets';
-import { getAvailableActions } from './actions';
+import { applyBasicAction, getAvailableActions } from './actions';
 import type { HandState, Player } from './types';
 
 const buildPlayer = (overrides: Partial<Player> = {}): Player => ({
@@ -87,5 +87,70 @@ describe('getAvailableActions', () => {
 
     expect(getAvailableActions(hand, folded)).toEqual([]);
     expect(getAvailableActions(hand, allIn)).toEqual([]);
+  });
+});
+
+describe('applyBasicAction', () => {
+  const buildPlayers = (): Player[] => [
+    { id: 'p1', name: 'Alice', seatIndex: 0, stack: 1000, state: 'ACTIVE' },
+    { id: 'p2', name: 'Bob', seatIndex: 1, stack: 800, state: 'ACTIVE' },
+    { id: 'p3', name: 'Carol', seatIndex: 2, stack: 600, state: 'ACTIVE' },
+  ];
+
+  const buildHandState = (overrides: Partial<HandState> = {}): HandState => ({
+    handNumber: 1,
+    dealerIndex: 0,
+    sbIndex: 1,
+    bbIndex: 2,
+    street: 'PREFLOP',
+    currentTurnPlayerId: 'p1',
+    currentBet: 0,
+    lastRaiseSize: 200,
+    reopenAllowed: true,
+    contribThisStreet: { p1: 0, p2: 0, p3: 0 },
+    pot: { main: 0, sides: [] },
+    actionLog: [],
+    ...overrides,
+  });
+
+  it('CHECKで状態を変えず手番を次のアクティブに進める', () => {
+    const players = buildPlayers();
+    const hand = buildHandState({ currentBet: 0 });
+
+    const log = applyBasicAction(players, hand, 'CHECK');
+
+    expect(log.type).toBe('CHECK');
+    expect(hand.currentTurnPlayerId).toBe('p2');
+    expect(hand.actionLog).toHaveLength(1);
+  });
+
+  it('CALLで差額を支払い、次のプレイヤーへ手番を移す', () => {
+    const players = buildPlayers();
+    const hand = buildHandState({
+      currentBet: 300,
+      contribThisStreet: { p1: 100, p2: 300, p3: 0 },
+      pot: { main: 400, sides: [] },
+    });
+
+    const log = applyBasicAction(players, hand, 'CALL');
+
+    expect(log.type).toBe('CALL');
+    expect(log.amount).toBe(200);
+    expect(players.find((p) => p.id === 'p1')?.stack).toBe(800);
+    expect(hand.contribThisStreet.p1).toBe(300);
+    expect(hand.pot.main).toBe(600);
+    expect(hand.currentTurnPlayerId).toBe('p2');
+  });
+
+  it('FOLDしたプレイヤーを手番対象から除外し次のアクティブへ進める', () => {
+    const players = buildPlayers();
+    players[1].state = 'ALL_IN';
+    const hand = buildHandState();
+
+    const log = applyBasicAction(players, hand, 'FOLD');
+
+    expect(log.type).toBe('FOLD');
+    expect(players[0].state).toBe('FOLDED');
+    expect(hand.currentTurnPlayerId).toBe('p3');
   });
 });
