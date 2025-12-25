@@ -29,6 +29,7 @@ const persistState = (state: GameState | null) => {
 export type GameStateContextValue = {
   gameState: GameState | null;
   setGameState: (state: GameState) => void;
+  updateGameState: (updater: (prev: GameState | null) => GameState | null) => void;
   clearGameState: () => void;
 };
 
@@ -43,6 +44,13 @@ export const GameStateProvider = ({ children }: { children: ReactNode }) => {
       setGameState: (state: GameState) => {
         setGameStateState(state);
         persistState(state);
+      },
+      updateGameState: (updater: (prev: GameState | null) => GameState | null) => {
+        setGameStateState((prev) => {
+          const next = updater(prev);
+          persistState(next);
+          return next;
+        });
       },
       clearGameState: () => {
         setGameStateState(null);
