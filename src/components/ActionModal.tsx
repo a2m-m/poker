@@ -12,8 +12,10 @@ interface ActionModalProps {
   currentBet: number;
   callAmount: number;
   minBet: number;
-  minRaiseTo: number;
+  minRaiseTo: number | null;
   maxAmount: number;
+  canRaise: boolean;
+  raiseDisabledReason?: string;
   onClose: () => void;
 }
 
@@ -39,6 +41,10 @@ function formatNumber(value: number) {
   return value.toLocaleString();
 }
 
+function formatNumberOrDash(value: number | null) {
+  return value !== null ? value.toLocaleString() : '—';
+}
+
 export function ActionModal({
   open,
   playerName,
@@ -48,27 +54,30 @@ export function ActionModal({
   callAmount,
   minBet,
   minRaiseTo,
+  canRaise,
+  raiseDisabledReason,
   maxAmount,
   onClose,
 }: ActionModalProps) {
+  const raiseBase = minRaiseTo ?? minBet;
   const [selectedAction, setSelectedAction] = useState<ActionType>(callAmount === 0 ? 'check' : 'call');
-  const [amount, setAmount] = useState<number>(minRaiseTo);
+  const [amount, setAmount] = useState<number>(raiseBase);
 
   useEffect(() => {
     const defaultAction: ActionType = callAmount === 0 ? 'check' : 'call';
     setSelectedAction(defaultAction);
-    setAmount(minRaiseTo);
-  }, [open, callAmount, minRaiseTo]);
+    setAmount(raiseBase);
+  }, [open, callAmount, raiseBase]);
 
   useEffect(() => {
     if (selectedAction === 'bet' || selectedAction === 'raise') {
-      const baseValue = selectedAction === 'bet' ? minBet : minRaiseTo;
+      const baseValue = selectedAction === 'bet' ? minBet : raiseBase;
       setAmount((current) => Math.min(Math.max(current, baseValue), maxAmount));
     }
-  }, [selectedAction, minBet, minRaiseTo, maxAmount]);
+  }, [selectedAction, minBet, raiseBase, maxAmount]);
 
   const requiresAmount = selectedAction === 'bet' || selectedAction === 'raise';
-  const minValue = selectedAction === 'bet' ? minBet : minRaiseTo;
+  const minValue = selectedAction === 'bet' ? minBet : raiseBase;
 
   const presets = useMemo(
     () => [
@@ -84,7 +93,12 @@ export function ActionModal({
     { type: 'check', label: actionLabels.check, disabled: callAmount > 0, reason: 'コール必要額が0のときのみ' },
     { type: 'call', label: actionLabels.call },
     { type: 'bet', label: actionLabels.bet, disabled: currentBet > 0, reason: '現在ベットが0のときのみ' },
-    { type: 'raise', label: actionLabels.raise, disabled: currentBet === 0, reason: '現在ベットがあるときのみ' },
+    {
+      type: 'raise',
+      label: actionLabels.raise,
+      disabled: !canRaise,
+      reason: raiseDisabledReason ?? '現在ベットがあるときのみ',
+    },
     { type: 'fold', label: actionLabels.fold },
     { type: 'allIn', label: actionLabels.allIn },
   ];
@@ -130,7 +144,7 @@ export function ActionModal({
           </div>
           <div>
             <p className={styles.summaryLabel}>最小レイズ</p>
-            <p className={styles.summaryValue}>{formatNumber(minRaiseTo)}</p>
+            <p className={styles.summaryValue}>{formatNumberOrDash(minRaiseTo)}</p>
           </div>
           <div>
             <p className={styles.summaryLabel}>ポット合計</p>
@@ -209,7 +223,7 @@ export function ActionModal({
                   </button>
                 </div>
                 <p className={styles.rangeHint}>
-                  範囲 {formatNumber(minValue)} 〜 {formatNumber(maxAmount)} （最小レイズ {formatNumber(minRaiseTo)}）
+                  範囲 {formatNumber(minValue)} 〜 {formatNumber(maxAmount)} （最小レイズ {formatNumberOrDash(minRaiseTo)}）
                 </p>
               </div>
               <div className={styles.presets}>

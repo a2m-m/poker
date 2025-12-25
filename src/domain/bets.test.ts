@@ -1,35 +1,41 @@
 import { describe, expect, it } from 'vitest';
-import { calcCallNeeded } from './bets';
+import { calcCallNeeded, calcMinRaiseTo } from './bets';
+import type { HandState } from './types';
 
-const buildHand = (currentBet: number, contrib: Record<string, number>) => ({
-  currentBet,
-  contribThisStreet: contrib,
-});
+describe('bets utilities', () => {
+  const handBase: Pick<HandState, 'currentBet' | 'contribThisStreet' | 'lastRaiseSize' | 'reopenAllowed'> = {
+    currentBet: 0,
+    contribThisStreet: {},
+    lastRaiseSize: 200,
+    reopenAllowed: true,
+  };
 
-describe('calcCallNeeded', () => {
-  it('現在のベットが0のときは必要額も0になる', () => {
-    const hand = buildHand(0, { p1: 0, p2: 0 });
+  describe('calcCallNeeded', () => {
+    it('現在ベット未満の場合は差額を返す', () => {
+      const hand = { ...handBase, currentBet: 500, contribThisStreet: { a: 100 } };
+      expect(calcCallNeeded(hand, 'a')).toBe(400);
+    });
 
-    expect(calcCallNeeded(hand, 'p1')).toBe(0);
-    expect(calcCallNeeded(hand, 'p2')).toBe(0);
+    it('到達済みの場合は0を返す', () => {
+      const hand = { ...handBase, currentBet: 500, contribThisStreet: { a: 600 } };
+      expect(calcCallNeeded(hand, 'a')).toBe(0);
+    });
   });
 
-  it('プレイヤーが到達済みなら必要額は0になる', () => {
-    const hand = buildHand(200, { p1: 200, p2: 50 });
+  describe('calcMinRaiseTo', () => {
+    it('現在ベットと直近の上げ幅を合算した到達額を返す', () => {
+      const hand = { ...handBase, currentBet: 800, lastRaiseSize: 300 };
+      expect(calcMinRaiseTo(hand)).toBe(1100);
+    });
 
-    expect(calcCallNeeded(hand, 'p1')).toBe(0);
-  });
+    it('現在ベットが0のときはnullを返す', () => {
+      const hand = { ...handBase, currentBet: 0 };
+      expect(calcMinRaiseTo(hand)).toBeNull();
+    });
 
-  it('未到達分をコール必要額として返す', () => {
-    const hand = buildHand(200, { p1: 50, p2: 0 });
-
-    expect(calcCallNeeded(hand, 'p1')).toBe(150);
-    expect(calcCallNeeded(hand, 'p2')).toBe(200);
-  });
-
-  it('まだ一度も支払っていない場合は0扱いで計算する', () => {
-    const hand = buildHand(120, { p1: 0 });
-
-    expect(calcCallNeeded(hand, 'p2')).toBe(120);
+    it('再オープン不可の場合はnullを返す', () => {
+      const hand = { ...handBase, currentBet: 600, reopenAllowed: false };
+      expect(calcMinRaiseTo(hand)).toBeNull();
+    });
   });
 });
