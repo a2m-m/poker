@@ -220,3 +220,52 @@ export const applyBetOrRaise = (
 
   return log;
 };
+
+export const applyAllIn = (
+  players: Player[],
+  hand: HandState,
+): ActionLogEntry => {
+  const player = findPlayerById(players, hand.currentTurnPlayerId);
+
+  if (player.stack <= 0) {
+    throw new Error('オールインできません：スタックがありません。');
+  }
+
+  const prevCurrentBet = hand.currentBet;
+  const prevLastRaise = hand.lastRaiseSize;
+
+  applyPayment(players, hand, player.id, player.stack);
+
+  const reached = hand.contribThisStreet[player.id] ?? 0;
+
+  if (prevCurrentBet === 0) {
+    hand.currentBet = reached;
+    hand.lastRaiseSize = reached;
+    hand.reopenAllowed = true;
+  } else if (reached > prevCurrentBet) {
+    hand.currentBet = reached;
+    const raiseSize = reached - prevCurrentBet;
+    const isFullRaise = raiseSize >= prevLastRaise;
+
+    if (isFullRaise) {
+      hand.lastRaiseSize = raiseSize;
+      hand.reopenAllowed = true;
+    } else {
+      hand.reopenAllowed = false;
+    }
+  }
+
+  const log = appendActionLog(hand, {
+    type: 'ALL_IN',
+    playerId: player.id,
+    amount: reached,
+    street: hand.street,
+  });
+
+  const nextPlayerId = findNextActivePlayerId(players, player.seatIndex);
+  if (nextPlayerId) {
+    hand.currentTurnPlayerId = nextPlayerId;
+  }
+
+  return log;
+};
