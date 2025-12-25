@@ -1,11 +1,11 @@
 import './App.css';
-import { ReactNode, useMemo, useState } from 'react';
+import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { HashRouter, NavLink, Navigate, Route, Routes } from 'react-router-dom';
 import reactLogo from './assets/react.svg';
 import { Button } from './components/Button';
 import { Card } from './components/Card';
 import { ConfirmDialog } from './components/ConfirmDialog';
-import { ToastMessage, ToastStack } from './components/Toast';
+import { useToast } from './components/Toast';
 import { HomePage } from './pages/HomePage';
 import { LogPage } from './pages/LogPage';
 import { PayoutPage } from './pages/PayoutPage';
@@ -13,7 +13,7 @@ import { SettingsPage } from './pages/SettingsPage';
 import { SetupPage } from './pages/SetupPage';
 import { ShowdownPage } from './pages/ShowdownPage';
 import { TablePage } from './pages/TablePage';
-import { GameStateProvider, useGameState } from './state/GameStateContext';
+import { useGameState } from './state/GameStateContext';
 import { getResumeAvailability } from './state/selectors';
 import viteLogo from '/vite.svg';
 
@@ -135,17 +135,22 @@ const GuardedTablePage = ({ element }: { element: ReactNode }) => {
 };
 
 function App() {
+  const { pushToast } = useToast();
   const [isDialogOpen, setDialogOpen] = useState(false);
-  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const { hasCorruptedSave } = useGameState();
 
-  const pushToast = (toast: Omit<ToastMessage, 'id'>) => {
-    const id = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-    setToasts((prev) => [...prev, { ...toast, id }]);
-  };
-
-  const removeToast = (id: string) => {
-    setToasts((prev) => prev.filter((toast) => toast.id !== id));
-  };
+  useEffect(() => {
+    if (!hasCorruptedSave) return;
+    pushToast({
+      title: '保存データを復元できませんでした',
+      description: '破損したデータを破棄しました。Undo や設定ページから復旧を確認してください。',
+      variant: 'warning',
+      actionLabel: '設定を開く',
+      onAction: () => {
+        window.location.hash = '#/settings';
+      },
+    });
+  }, [hasCorruptedSave, pushToast]);
 
   const openDialog = () => setDialogOpen(true);
   const handleDialogConfirm = () => {
@@ -183,8 +188,7 @@ function App() {
 
   return (
     <HashRouter>
-      <GameStateProvider>
-        <div className="app">
+      <div className="app">
         <header className="app__header">
           <div className="app__logos">
             <a href="https://vitejs.dev" target="_blank" rel="noreferrer">
@@ -300,9 +304,7 @@ function App() {
           onConfirm={handleDialogConfirm}
           onCancel={handleDialogCancel}
         />
-        <ToastStack toasts={toasts} onClose={removeToast} />
       </div>
-      </GameStateProvider>
     </HashRouter>
   );
 }

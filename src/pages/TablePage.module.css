@@ -98,24 +98,6 @@
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 }
 
-.actionStack {
-  display: flex;
-  flex-direction: column;
-  gap: 0.8rem;
-}
-
-.actionButtons {
-  display: grid;
-  gap: 0.5rem;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-}
-
-.secondaryActions {
-  display: grid;
-  gap: 0.5rem;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-}
-
 .navLinks {
   display: flex;
   flex-direction: column;

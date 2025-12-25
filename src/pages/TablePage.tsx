@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { ActionModal } from '../components/ActionModal';
+import { ActionBar } from '../components/ActionBar';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { PotPanel } from '../components/PotPanel';
 import { PlayerCard, type PlayerStatus } from '../components/PlayerCard';
 import { StatusBar } from '../components/StatusBar';
 import { TurnPanel } from '../components/TurnPanel';
+import { useToast } from '../components/Toast';
 import { calcCallNeeded } from '../domain/bets';
 import { ActionLogEntry, ActionType, HandState, PlayerState } from '../domain/types';
 import { useGameState } from '../state/GameStateContext';
@@ -31,6 +33,7 @@ export function TablePage({ description }: TablePageProps) {
   const navigate = useNavigate();
   const { gameState, updateGameState } = useGameState();
   const [actionModalOpen, setActionModalOpen] = useState(false);
+  const { pushToast } = useToast();
 
   if (!gameState) {
     return (
@@ -129,22 +132,6 @@ export function TablePage({ description }: TablePageProps) {
     });
   };
 
-  const handleConfirmAction = (actionInput: PlayerActionInput) => {
-    updateGameState((prev) => {
-      if (!prev) return prev;
-
-      try {
-        return applyPlayerActionToState(prev, actionInput);
-      } catch (error) {
-        // eslint-disable-next-line no-console
-        console.error(error);
-        return prev;
-      }
-    });
-
-    setActionModalOpen(false);
-  };
-
   const handleUndo = () => {
     updateGameState((prev) => {
       if (!prev) return prev;
@@ -174,6 +161,29 @@ export function TablePage({ description }: TablePageProps) {
         },
       };
     });
+  };
+
+  const handleConfirmAction = (actionInput: PlayerActionInput) => {
+    updateGameState((prev) => {
+      if (!prev) return prev;
+
+      try {
+        return applyPlayerActionToState(prev, actionInput);
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error(error);
+        pushToast({
+          title: 'アクションの適用に失敗しました',
+          description: 'Undo またはログ/設定で状態を確認してください。',
+          variant: 'danger',
+          actionLabel: 'Undo を試す',
+          onAction: handleUndo,
+        });
+        return prev;
+      }
+    });
+
+    setActionModalOpen(false);
   };
 
   return (
@@ -237,42 +247,34 @@ export function TablePage({ description }: TablePageProps) {
           title="アクション入力の枠"
           description="ボタン群と導線をまとめるアクションバーの配置例です。セットアップからの状態を使ってモーダルを開きます。"
         >
-          <div className={styles.actionStack}>
-            <div className={styles.actionButtons}>
-              <Button variant="primary" block onClick={() => setActionModalOpen(true)}>
-                アクションを入力（モーダル想定）
-              </Button>
-              <Button variant="undo" block onClick={handleUndo}>
-                Undo（直前を取り消す）
-              </Button>
-            </div>
-            <div className={styles.secondaryActions}>
-              <Button variant="secondary" onClick={appendDemoLog}>
-                デモログを1件追加
-              </Button>
-              <Button variant="secondary" onClick={() => navigate('/log')}>
-                ログを確認
-              </Button>
-              <Button variant="secondary" onClick={() => navigate('/showdown')}>
-                ショーダウンへ
-              </Button>
-              <Button variant="danger" onClick={() => navigate('/settings')}>
-                設定 / リセット
-              </Button>
-            </div>
-            <div className={styles.navLinks}>
-              <NavLink to="/log" className={styles.textLink}>
-                /log に移動して履歴を一覧
-              </NavLink>
-              <NavLink to="/showdown" className={styles.textLink}>
-                /showdown で勝者選択を確認
-              </NavLink>
-            </div>
-            <p className={styles.actionNote}>
-              モーダルを開くとアクション候補とベット/レイズ時の金額入力UIが表示されます。ここでは見た目と導線のみを
-              固定しつつ、共有状態から値を受け取っています。ログ件数は現在 {hand.actionLog.length} 件で、Undo ボタンを
-              押すと直近 1 件を巻き戻します。
-            </p>
+          <ActionBar
+            onPrimaryAction={() => setActionModalOpen(true)}
+            onUndo={handleUndo}
+            onShowLog={() => navigate('/log')}
+            onOpenSettings={() => navigate('/settings')}
+            logCount={hand.actionLog.length}
+            isUndoDisabled={hand.actionLog.length === 0}
+          />
+          <div className={styles.navLinks}>
+            <NavLink to="/log" className={styles.textLink}>
+              /log に移動して履歴を一覧
+            </NavLink>
+            <NavLink to="/showdown" className={styles.textLink}>
+              /showdown で勝者選択を確認
+            </NavLink>
+          </div>
+          <p className={styles.actionNote}>
+            モーダルを開くとアクション候補とベット/レイズ時の金額入力UIが表示されます。ここでは見た目と導線のみを
+            固定しつつ、共有状態から値を受け取っています。ログ件数は現在 {hand.actionLog.length} 件で、Undo ボタンを
+            押すと直近 1 件を巻き戻します。
+          </p>
+          <div className={styles.navLinks}>
+            <Button variant="secondary" onClick={appendDemoLog}>
+              デモログを1件追加
+            </Button>
+            <Button variant="secondary" onClick={() => navigate('/showdown')}>
+              ショーダウンへ
+            </Button>
           </div>
         </Card>
       </div>

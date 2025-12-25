@@ -2,6 +2,8 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { storageKeys } from './domain/storage';
 import App from './App';
+import { ToastProvider } from './components/Toast';
+import { GameStateProvider } from './state/GameStateContext';
 
 describe('主要画面スモークテスト', () => {
   beforeEach(() => {
@@ -10,7 +12,16 @@ describe('主要画面スモークテスト', () => {
   });
 
   it('ホームから主要導線をたどり、保存データで再開できる', async () => {
-    const { unmount } = render(<App />);
+    const renderApp = () =>
+      render(
+        <ToastProvider>
+          <GameStateProvider>
+            <App />
+          </GameStateProvider>
+        </ToastProvider>,
+      );
+
+    const { unmount } = renderApp();
 
     fireEvent.click(screen.getByRole('button', { name: 'ConfirmDialog を開く' }));
     expect(screen.getByRole('dialog', { name: '本当に削除しますか？' })).toBeInTheDocument();
@@ -29,7 +40,7 @@ describe('主要画面スモークテスト', () => {
     unmount();
     window.location.hash = '#/';
 
-    render(<App />);
+    renderApp();
     const resumeButton = await screen.findByRole('button', { name: '前回を再開（デモ）' });
     expect(resumeButton).toBeEnabled();
 
