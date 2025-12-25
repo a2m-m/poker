@@ -85,6 +85,13 @@
     background 0.2s ease;
 }
 
+.app__nav-link--disabled {
+  border-style: dashed;
+  color: var(--text-muted);
+  cursor: not-allowed;
+  background: var(--surface-weak);
+}
+
 .app__nav-link:hover {
   border-color: var(--accent);
   transform: translateY(-1px);
@@ -98,6 +105,12 @@
     0 16px 30px rgba(124, 159, 248, 0.18);
 }
 
+.app__nav-link--disabled:hover {
+  border-color: var(--border-normal);
+  transform: none;
+  background: var(--surface-weak);
+}
+
 .app__nav-title {
   font-weight: 700;
 }
@@ -105,6 +118,12 @@
 .app__nav-path {
   font-size: 0.92rem;
   color: var(--text-secondary);
+}
+
+.app__nav-reason {
+  margin: 0.35rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.95rem;
 }
 
 .app__content {

@@ -1,6 +1,6 @@
 import './App.css';
-import { ReactNode, useState } from 'react';
-import { HashRouter, NavLink, Route, Routes } from 'react-router-dom';
+import { ReactNode, useMemo, useState } from 'react';
+import { HashRouter, NavLink, Navigate, Route, Routes } from 'react-router-dom';
 import reactLogo from './assets/react.svg';
 import { Button } from './components/Button';
 import { Card } from './components/Card';
@@ -13,7 +13,8 @@ import { SettingsPage } from './pages/SettingsPage';
 import { SetupPage } from './pages/SetupPage';
 import { ShowdownPage } from './pages/ShowdownPage';
 import { TablePage } from './pages/TablePage';
-import { GameStateProvider } from './state/GameStateContext';
+import { GameStateProvider, useGameState } from './state/GameStateContext';
+import { getResumeAvailability } from './state/selectors';
 import viteLogo from '/vite.svg';
 
 type PageInfo = {
@@ -67,6 +68,71 @@ const pages: PageInfo[] = [
     element: <SettingsPage description="保存/復元や表示設定を扱う画面の予定地です。" />,
   },
 ];
+
+type NavPage = PageInfo & { disabledReason?: string | null };
+
+const AppNav = () => {
+  const { gameState } = useGameState();
+  const resumeAvailability = useMemo(() => getResumeAvailability(gameState), [gameState]);
+
+  const navPages: NavPage[] = pages.map((page) => {
+    if (page.path !== '/table') return page;
+    return {
+      ...page,
+      disabledReason: resumeAvailability.reason,
+    };
+  });
+
+  return (
+    <Card
+      as="nav"
+      eyebrow="Routing"
+      title="主要ルート"
+      description="各ページのプレースホルダーに移動できます。"
+      aria-label="アプリ内ルート一覧"
+    >
+      <ul className="app__nav-list">
+        {navPages.map((page) => (
+          <li key={page.path}>
+            {page.disabledReason ? (
+              <span className="app__nav-link app__nav-link--disabled" aria-disabled="true">
+                <span className="app__nav-title">{page.title}</span>
+                <span className="app__nav-path">{page.path}</span>
+              </span>
+            ) : (
+              <NavLink
+                to={page.path}
+                end={page.path === '/'}
+                className={({ isActive }) =>
+                  `app__nav-link${isActive ? ' app__nav-link--active' : ''}`
+                }
+              >
+                <span className="app__nav-title">{page.title}</span>
+                <span className="app__nav-path">{page.path}</span>
+              </NavLink>
+            )}
+            {page.disabledReason && (
+              <p className="app__nav-reason">{page.disabledReason}</p>
+            )}
+          </li>
+        ))}
+      </ul>
+      <p className="app__hint">
+        GitHub Pages のように 404 ハンドリングができない環境でも、#/table のようなハッシュ付き URL で安全に遷移できます。
+      </p>
+    </Card>
+  );
+};
+
+const GuardedTablePage = ({ element }: { element: ReactNode }) => {
+  const { gameState } = useGameState();
+
+  if (!gameState) {
+    return <Navigate to="/setup" replace />;
+  }
+
+  return <>{element}</>;
+};
 
 function App() {
   const [isDialogOpen, setDialogOpen] = useState(false);
@@ -137,34 +203,7 @@ function App() {
         </header>
 
         <main className="app__layout">
-          <Card
-            as="nav"
-            eyebrow="Routing"
-            title="主要ルート"
-            description="各ページのプレースホルダーに移動できます。"
-            aria-label="アプリ内ルート一覧"
-          >
-            <ul className="app__nav-list">
-              {pages.map((page) => (
-                <li key={page.path}>
-                  <NavLink
-                    to={page.path}
-                    end={page.path === '/'}
-                    className={({ isActive }) =>
-                      `app__nav-link${isActive ? ' app__nav-link--active' : ''}`
-                    }
-                  >
-                    <span className="app__nav-title">{page.title}</span>
-                    <span className="app__nav-path">{page.path}</span>
-                  </NavLink>
-                </li>
-              ))}
-            </ul>
-            <p className="app__hint">
-              GitHub Pages のように 404 ハンドリングができない環境でも、#/table のようなハッシュ付き
-              URL で安全に遷移できます。
-            </p>
-          </Card>
+          <AppNav />
 
           <section className="app__content">
             <Card
@@ -236,7 +275,17 @@ function App() {
 
             <Routes>
               {pages.map((page) => (
-                <Route key={page.path} path={page.path} element={page.element} />
+                <Route
+                  key={page.path}
+                  path={page.path}
+                  element={
+                    page.path === '/table' ? (
+                      <GuardedTablePage element={page.element} />
+                    ) : (
+                      page.element
+                    )
+                  }
+                />
               ))}
             </Routes>
           </section>
