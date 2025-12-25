@@ -1,4 +1,5 @@
 import { calcBlindIndices } from './positions';
+import { calcFirstToActPlayerId } from './turns';
 import { GameState, GameSettings, HandState, Player, PlayerId, Street } from './types';
 
 export type PlayerSetup = {
@@ -41,24 +42,6 @@ const payBlind = (
   return pay;
 };
 
-const findNextActivePlayerId = (players: Player[], startIndex: number): PlayerId => {
-  for (let i = 0; i < players.length; i += 1) {
-    const index = (startIndex + i) % players.length;
-    if (players[index].state === 'ACTIVE') {
-      return players[index].id;
-    }
-  }
-  return players[startIndex % players.length].id;
-};
-
-const decideFirstToAct = (players: Player[], sbIndex: number, bbIndex: number): PlayerId => {
-  if (players.length === 2) {
-    return findNextActivePlayerId(players, sbIndex);
-  }
-  const utgIndex = (bbIndex + 1) % players.length;
-  return findNextActivePlayerId(players, utgIndex);
-};
-
 const buildInitialHandState = (
   settings: GameSettings,
   players: Player[],
@@ -71,7 +54,7 @@ const buildInitialHandState = (
   const bbPaid = payBlind(players, contribThisStreet, bbIndex, settings.bb);
 
   const currentBet = Math.max(bbPaid, sbPaid);
-  const currentTurnPlayerId = decideFirstToAct(players, sbIndex, bbIndex);
+  const currentTurnPlayerId = calcFirstToActPlayerId(players, PREFLOP, dealerIndex, bbIndex);
 
   const potTotal = Object.values(contribThisStreet).reduce((sum, value) => sum + value, 0);
 
