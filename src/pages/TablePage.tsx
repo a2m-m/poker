@@ -57,7 +57,7 @@ export function TablePage({ description }: TablePageProps) {
             <h2 className={styles.title}>テーブル</h2>
           </div>
           <p className={styles.lead}>{description}</p>
-          <p className={styles.note}>セットアップで開始すると現在のプレイヤーとブラインドがここに表示されます。</p>
+          <p className={styles.note}>ホームから「新規ゲームを開始」→セットアップで開始すると現在のプレイヤーとブラインドがここに表示されます。</p>
         </header>
 
         <Card
