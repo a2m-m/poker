@@ -35,6 +35,11 @@ describe('createNewGame', () => {
       p2: 100,
       p3: 200,
     });
+    expect(game.hand.totalContribThisHand).toEqual({
+      p1: 0,
+      p2: 100,
+      p3: 200,
+    });
     expect(game.hand.pot).toEqual({ main: 300, sides: [] });
     expect(game.hand.actionLog).toEqual([]);
   });
@@ -52,6 +57,7 @@ describe('createNewGame', () => {
     expect(game.hand.bbIndex).toBe(1);
     expect(game.hand.currentTurnPlayerId).toBe('p1');
     expect(game.hand.contribThisStreet).toEqual({ p1: 100, p2: 200 });
+    expect(game.hand.totalContribThisHand).toEqual({ p1: 100, p2: 200 });
   });
 
   it('ブラインドでスタックが尽きたプレイヤーをALL_INにする', () => {
@@ -66,6 +72,7 @@ describe('createNewGame', () => {
     expect(game.players.find((p) => p.id === 'p2')?.state).toBe('ALL_IN');
     expect(game.players.find((p) => p.id === 'p3')?.state).toBe('ALL_IN');
     expect(game.hand.contribThisStreet).toEqual({ p1: 0, p2: 60, p3: 150 });
+    expect(game.hand.totalContribThisHand).toEqual({ p1: 0, p2: 60, p3: 150 });
     expect(game.hand.currentBet).toBe(150);
     expect(game.hand.pot.main).toBe(210);
   });

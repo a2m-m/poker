@@ -18,7 +18,7 @@ export const calcMinRaiseTo = (
 
 export const applyPayment = (
   players: Player[],
-  hand: Pick<HandState, 'contribThisStreet' | 'pot'>,
+  hand: Pick<HandState, 'contribThisStreet' | 'totalContribThisHand' | 'pot'>,
   playerId: PlayerId,
   amount: number,
 ): number => {
@@ -31,6 +31,7 @@ export const applyPayment = (
 
   player.stack -= pay;
   hand.contribThisStreet[playerId] = (hand.contribThisStreet[playerId] ?? 0) + pay;
+  hand.totalContribThisHand[playerId] = (hand.totalContribThisHand[playerId] ?? 0) + pay;
   hand.pot.main += pay;
 
   if (player.stack === 0) {

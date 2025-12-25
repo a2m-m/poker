@@ -12,21 +12,27 @@ const buildPlayer = (overrides: Partial<Player> = {}): Player => ({
   ...overrides,
 });
 
-const buildHand = (overrides: Partial<HandState> = {}): HandState => ({
-  handNumber: 1,
-  dealerIndex: 0,
-  sbIndex: 0,
-  bbIndex: 1,
-  street: 'PREFLOP',
-  currentTurnPlayerId: 'p1',
-  currentBet: 0,
-  lastRaiseSize: 200,
-  reopenAllowed: true,
-  contribThisStreet: { p1: 0, p2: 0 },
-  pot: { main: 0, sides: [] },
-  actionLog: [],
-  ...overrides,
-});
+const buildHand = (overrides: Partial<HandState> = {}): HandState => {
+  const contribThisStreet = overrides.contribThisStreet ?? { p1: 0, p2: 0 };
+  const totalContribThisHand = overrides.totalContribThisHand ?? { ...contribThisStreet };
+
+  return {
+    handNumber: 1,
+    dealerIndex: 0,
+    sbIndex: 0,
+    bbIndex: 1,
+    street: 'PREFLOP',
+    currentTurnPlayerId: 'p1',
+    currentBet: 0,
+    lastRaiseSize: 200,
+    reopenAllowed: true,
+    contribThisStreet,
+    totalContribThisHand,
+    pot: { main: 0, sides: [] },
+    actionLog: [],
+    ...overrides,
+  };
+};
 
 describe('getAvailableActions', () => {
   it('コール必要額が0ならCHECKが可能になる', () => {
@@ -97,21 +103,27 @@ describe('applyBasicAction', () => {
     { id: 'p3', name: 'Carol', seatIndex: 2, stack: 600, state: 'ACTIVE' },
   ];
 
-  const buildHandState = (overrides: Partial<HandState> = {}): HandState => ({
-    handNumber: 1,
-    dealerIndex: 0,
-    sbIndex: 1,
-    bbIndex: 2,
-    street: 'PREFLOP',
-    currentTurnPlayerId: 'p1',
-    currentBet: 0,
-    lastRaiseSize: 200,
-    reopenAllowed: true,
-    contribThisStreet: { p1: 0, p2: 0, p3: 0 },
-    pot: { main: 0, sides: [] },
-    actionLog: [],
-    ...overrides,
-  });
+  const buildHandState = (overrides: Partial<HandState> = {}): HandState => {
+    const contribThisStreet = overrides.contribThisStreet ?? { p1: 0, p2: 0, p3: 0 };
+    const totalContribThisHand = overrides.totalContribThisHand ?? { ...contribThisStreet };
+
+    return {
+      handNumber: 1,
+      dealerIndex: 0,
+      sbIndex: 1,
+      bbIndex: 2,
+      street: 'PREFLOP',
+      currentTurnPlayerId: 'p1',
+      currentBet: 0,
+      lastRaiseSize: 200,
+      reopenAllowed: true,
+      contribThisStreet,
+      totalContribThisHand,
+      pot: { main: 0, sides: [] },
+      actionLog: [],
+      ...overrides,
+    };
+  };
 
   it('CHECKで状態を変えず手番を次のアクティブに進める', () => {
     const players = buildPlayers();
@@ -162,21 +174,27 @@ describe('applyBetOrRaise', () => {
     { id: 'p3', name: 'Carol', seatIndex: 2, stack: 600, state: 'ACTIVE' },
   ];
 
-  const buildHandState = (overrides: Partial<HandState> = {}): HandState => ({
-    handNumber: 1,
-    dealerIndex: 0,
-    sbIndex: 1,
-    bbIndex: 2,
-    street: 'PREFLOP',
-    currentTurnPlayerId: 'p1',
-    currentBet: 0,
-    lastRaiseSize: 200,
-    reopenAllowed: true,
-    contribThisStreet: { p1: 0, p2: 0, p3: 0 },
-    pot: { main: 0, sides: [] },
-    actionLog: [],
-    ...overrides,
-  });
+  const buildHandState = (overrides: Partial<HandState> = {}): HandState => {
+    const contribThisStreet = overrides.contribThisStreet ?? { p1: 0, p2: 0, p3: 0 };
+    const totalContribThisHand = overrides.totalContribThisHand ?? { ...contribThisStreet };
+
+    return {
+      handNumber: 1,
+      dealerIndex: 0,
+      sbIndex: 1,
+      bbIndex: 2,
+      street: 'PREFLOP',
+      currentTurnPlayerId: 'p1',
+      currentBet: 0,
+      lastRaiseSize: 200,
+      reopenAllowed: true,
+      contribThisStreet,
+      totalContribThisHand,
+      pot: { main: 0, sides: [] },
+      actionLog: [],
+      ...overrides,
+    };
+  };
 
   it('BETで現在ベットと上げ幅を更新し、支払いを反映する', () => {
     const players = buildPlayers();
@@ -243,21 +261,27 @@ describe('applyAllIn', () => {
     { id: 'p3', name: 'Carol', seatIndex: 2, stack: 600, state: 'ACTIVE' },
   ];
 
-  const buildHandState = (overrides: Partial<HandState> = {}): HandState => ({
-    handNumber: 1,
-    dealerIndex: 0,
-    sbIndex: 1,
-    bbIndex: 2,
-    street: 'PREFLOP',
-    currentTurnPlayerId: 'p1',
-    currentBet: 0,
-    lastRaiseSize: 200,
-    reopenAllowed: true,
-    contribThisStreet: { p1: 0, p2: 0, p3: 0 },
-    pot: { main: 0, sides: [] },
-    actionLog: [],
-    ...overrides,
-  });
+  const buildHandState = (overrides: Partial<HandState> = {}): HandState => {
+    const contribThisStreet = overrides.contribThisStreet ?? { p1: 0, p2: 0, p3: 0 };
+    const totalContribThisHand = overrides.totalContribThisHand ?? { ...contribThisStreet };
+
+    return {
+      handNumber: 1,
+      dealerIndex: 0,
+      sbIndex: 1,
+      bbIndex: 2,
+      street: 'PREFLOP',
+      currentTurnPlayerId: 'p1',
+      currentBet: 0,
+      lastRaiseSize: 200,
+      reopenAllowed: true,
+      contribThisStreet,
+      totalContribThisHand,
+      pot: { main: 0, sides: [] },
+      actionLog: [],
+      ...overrides,
+    };
+  };
 
   it('現在ベット0のALL_INでcurrentBet/lastRaiseSizeを更新する', () => {
     const players = buildPlayers();

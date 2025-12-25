@@ -29,6 +29,7 @@ const initializeContrib = (players: Player[]): Record<PlayerId, number> =>
 const payBlind = (
   players: Player[],
   contrib: Record<PlayerId, number>,
+  totalContrib: Record<PlayerId, number>,
   targetIndex: number,
   amount: number,
 ): number => {
@@ -36,6 +37,7 @@ const payBlind = (
   const pay = Math.min(player.stack, Math.max(0, amount));
   player.stack -= pay;
   contrib[player.id] += pay;
+  totalContrib[player.id] += pay;
   if (player.stack === 0) {
     player.state = 'ALL_IN';
   }
@@ -48,10 +50,11 @@ const buildInitialHandState = (
   dealerIndex: number,
 ): HandState => {
   const contribThisStreet = initializeContrib(players);
+  const totalContribThisHand = initializeContrib(players);
   const { sbIndex, bbIndex } = calcBlindIndices(players, dealerIndex);
 
-  const sbPaid = payBlind(players, contribThisStreet, sbIndex, settings.sb);
-  const bbPaid = payBlind(players, contribThisStreet, bbIndex, settings.bb);
+  const sbPaid = payBlind(players, contribThisStreet, totalContribThisHand, sbIndex, settings.sb);
+  const bbPaid = payBlind(players, contribThisStreet, totalContribThisHand, bbIndex, settings.bb);
 
   const currentBet = Math.max(bbPaid, sbPaid);
   const currentTurnPlayerId = calcFirstToActPlayerId(players, PREFLOP, dealerIndex, bbIndex);
@@ -69,6 +72,7 @@ const buildInitialHandState = (
     lastRaiseSize: settings.bb,
     reopenAllowed: true,
     contribThisStreet,
+    totalContribThisHand,
     pot: {
       main: potTotal,
       sides: [],

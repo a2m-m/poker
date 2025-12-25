@@ -65,6 +65,7 @@ export type HandState = {
   reopenAllowed: boolean; // 最小レイズ未満オールインで false
 
   contribThisStreet: Record<PlayerId, number>; // ストリート投入
+  totalContribThisHand: Record<PlayerId, number>; // ハンド累計投入（サイドポット計算用）
   pot: PotState;
 
   actionLog: ActionLogEntry[];
