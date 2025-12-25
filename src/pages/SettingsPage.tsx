@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { useToast } from '../components/Toast';
+import { useGameState } from '../state/GameStateContext';
 import styles from './SettingsPage.module.css';
 
 interface SettingsPageProps {
@@ -18,6 +20,8 @@ export function SettingsPage({ description }: SettingsPageProps) {
   const [dialogType, setDialogType] = useState<DialogType>('none');
   const [lastSavedAt, setLastSavedAt] = useState('3分前');
   const [restorePreview, setRestorePreview] = useState('メインポット集計前のスナップショット');
+  const { clearGameState } = useGameState();
+  const { pushToast } = useToast();
 
   const roundingHint = useMemo(() => {
     switch (roundingMode) {
@@ -45,15 +49,35 @@ export function SettingsPage({ description }: SettingsPageProps) {
 
   const handleConfirm = () => {
     if (dialogType === 'discard') {
+      clearGameState();
       setLastSavedAt('保存データなし');
       setRestorePreview('破棄済み: 復元対象はありません');
+      pushToast({
+        title: '保存データを破棄しました',
+        description: 'ローカルのハンド状態を削除しました。セットアップからやり直せます。',
+        variant: 'danger',
+        actionLabel: 'セットアップに戻る',
+        onAction: () => {
+          window.location.hash = '#/setup';
+        },
+      });
     }
     if (dialogType === 'reset') {
+      clearGameState();
       setRoundingMode('floor');
       setShowBurnCards(true);
       setAutoSaveEnabled(false);
       setLastSavedAt('初期状態');
       setRestorePreview('初期状態');
+      pushToast({
+        title: '表示設定を初期化しました',
+        description: 'Undo やログがリセットされるため、必要ならセットアップから再開してください。',
+        variant: 'info',
+        actionLabel: 'テーブルに戻る',
+        onAction: () => {
+          window.location.hash = '#/table';
+        },
+      });
     }
     closeDialog();
   };

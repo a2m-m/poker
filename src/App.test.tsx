@@ -22,10 +22,18 @@ vi.mock('./state/persistence', async () => {
 });
 
 import App from './App';
+import { ToastProvider } from './components/Toast';
+import { GameStateProvider } from './state/GameStateContext';
 
 describe('App', () => {
   it('主要ルートのリンクを表示する', () => {
-    render(<App />);
+    render(
+      <ToastProvider>
+        <GameStateProvider>
+          <App />
+        </GameStateProvider>
+      </ToastProvider>,
+    );
 
     expect(screen.getByRole('heading', { level: 1, name: 'Poker Dealer App' })).toBeInTheDocument();
 
