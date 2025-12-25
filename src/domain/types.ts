@@ -42,6 +42,7 @@ export type ActionLogEntry = {
   amount?: number; // BET/RAISE/CALL/ALL_IN時の支払額 or 到達額
   street: Street;
   snapshot?: HandState; // Undo方式により利用
+  playersSnapshot?: Player[]; // Undo方式により利用
 };
 
 export type GameSettings = {
