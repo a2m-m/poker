@@ -6,6 +6,7 @@ import { Card } from '../components/Card';
 import { PlayerCard, type PlayerRole, type PlayerStatus } from '../components/PlayerCard';
 import { StatusBar } from '../components/StatusBar';
 import { TurnPanel } from '../components/TurnPanel';
+import { calcCallNeeded } from '../domain/bets';
 import { ActionLogEntry, ActionType, HandState, PlayerState, Street } from '../domain/types';
 import { useGameState } from '../state/GameStateContext';
 import styles from './TablePage.module.css';
@@ -34,11 +35,6 @@ const getRoleForIndex = (hand: { dealerIndex: number; sbIndex: number; bbIndex: 
   if (seatIndex === hand.sbIndex) return 'SB';
   if (seatIndex === hand.bbIndex) return 'BB';
   return undefined;
-};
-
-const calcCallNeeded = (hand: { currentBet: number; contribThisStreet: Record<string, number> }, playerId: string) => {
-  const contributed = hand.contribThisStreet[playerId] ?? 0;
-  return Math.max(0, hand.currentBet - contributed);
 };
 
 const calcPotTotal = (pot: { main: number; sides: { amount: number }[] }) =>
