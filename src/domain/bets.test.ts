@@ -11,6 +11,11 @@ describe('bets utilities', () => {
   };
 
   describe('calcCallNeeded', () => {
+    it('未投入の場合は現在ベット額がそのまま必要になる', () => {
+      const hand = { ...handBase, currentBet: 600, contribThisStreet: {} };
+      expect(calcCallNeeded(hand, 'a')).toBe(600);
+    });
+
     it('現在ベット未満の場合は差額を返す', () => {
       const hand = { ...handBase, currentBet: 500, contribThisStreet: { a: 100 } };
       expect(calcCallNeeded(hand, 'a')).toBe(400);
@@ -19,6 +24,11 @@ describe('bets utilities', () => {
     it('到達済みの場合は0を返す', () => {
       const hand = { ...handBase, currentBet: 500, contribThisStreet: { a: 600 } };
       expect(calcCallNeeded(hand, 'a')).toBe(0);
+    });
+
+    it('他プレイヤーの投入状況に影響されず個別に計算する', () => {
+      const hand = { ...handBase, currentBet: 700, contribThisStreet: { a: 650, b: 1000 } };
+      expect(calcCallNeeded(hand, 'a')).toBe(50);
     });
   });
 
@@ -36,6 +46,11 @@ describe('bets utilities', () => {
     it('再オープン不可の場合はnullを返す', () => {
       const hand = { ...handBase, currentBet: 600, reopenAllowed: false };
       expect(calcMinRaiseTo(hand)).toBeNull();
+    });
+
+    it('最小レイズ額が大きくても計算式どおりに返す', () => {
+      const hand = { ...handBase, currentBet: 1500, lastRaiseSize: 1200 };
+      expect(calcMinRaiseTo(hand)).toBe(2700);
     });
   });
 
