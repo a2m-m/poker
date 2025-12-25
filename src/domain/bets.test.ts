@@ -45,21 +45,27 @@ describe('bets utilities', () => {
       { id: 'p2', name: 'Bob', seatIndex: 1, stack: 800, state: 'ACTIVE' },
     ];
 
-    const buildHand = (overrides: Partial<HandState> = {}): HandState => ({
-      handNumber: 1,
-      dealerIndex: 0,
-      sbIndex: 0,
-      bbIndex: 1,
-      street: 'PREFLOP',
-      currentTurnPlayerId: 'p1',
-      currentBet: 200,
-      lastRaiseSize: 200,
-      reopenAllowed: true,
-      contribThisStreet: { p1: 0, p2: 0 },
-      pot: { main: 0, sides: [] },
-      actionLog: [],
-      ...overrides,
-    });
+    const buildHand = (overrides: Partial<HandState> = {}): HandState => {
+      const contribThisStreet = overrides.contribThisStreet ?? { p1: 0, p2: 0 };
+      const totalContribThisHand = overrides.totalContribThisHand ?? { ...contribThisStreet };
+
+      return {
+        handNumber: 1,
+        dealerIndex: 0,
+        sbIndex: 0,
+        bbIndex: 1,
+        street: 'PREFLOP',
+        currentTurnPlayerId: 'p1',
+        currentBet: 200,
+        lastRaiseSize: 200,
+        reopenAllowed: true,
+        contribThisStreet,
+        totalContribThisHand,
+        pot: { main: 0, sides: [] },
+        actionLog: [],
+        ...overrides,
+      };
+    };
 
     it('指定額をスタックから差し引き、投入とポットへ加算する', () => {
       const players = buildPlayers();
@@ -70,6 +76,7 @@ describe('bets utilities', () => {
       expect(paid).toBe(300);
       expect(players.find((p) => p.id === 'p1')?.stack).toBe(700);
       expect(hand.contribThisStreet.p1).toBe(300);
+      expect(hand.totalContribThisHand.p1).toBe(300);
       expect(hand.pot.main).toBe(300);
     });
 
@@ -83,6 +90,7 @@ describe('bets utilities', () => {
       expect(players.find((p) => p.id === 'p2')?.stack).toBe(0);
       expect(players.find((p) => p.id === 'p2')?.state).toBe('ALL_IN');
       expect(hand.contribThisStreet.p2).toBe(800);
+      expect(hand.totalContribThisHand.p2).toBe(800);
       expect(hand.pot.main).toBe(900);
     });
   });
