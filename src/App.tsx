@@ -13,6 +13,7 @@ import { SettingsPage } from './pages/SettingsPage';
 import { SetupPage } from './pages/SetupPage';
 import { ShowdownPage } from './pages/ShowdownPage';
 import { TablePage } from './pages/TablePage';
+import { GameStateProvider } from './state/GameStateContext';
 import viteLogo from '/vite.svg';
 
 type PageInfo = {
@@ -116,7 +117,8 @@ function App() {
 
   return (
     <HashRouter>
-      <div className="app">
+      <GameStateProvider>
+        <div className="app">
         <header className="app__header">
           <div className="app__logos">
             <a href="https://vitejs.dev" target="_blank" rel="noreferrer">
@@ -251,6 +253,7 @@ function App() {
         />
         <ToastStack toasts={toasts} onClose={removeToast} />
       </div>
+      </GameStateProvider>
     </HashRouter>
   );
 }
