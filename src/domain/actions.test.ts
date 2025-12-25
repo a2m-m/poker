@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { calcCallNeeded } from './bets';
-import { applyBasicAction, getAvailableActions } from './actions';
+import { applyBasicAction, applyBetOrRaise, getAvailableActions } from './actions';
 import type { HandState, Player } from './types';
 
 const buildPlayer = (overrides: Partial<Player> = {}): Player => ({
@@ -152,5 +152,86 @@ describe('applyBasicAction', () => {
     expect(log.type).toBe('FOLD');
     expect(players[0].state).toBe('FOLDED');
     expect(hand.currentTurnPlayerId).toBe('p3');
+  });
+});
+
+describe('applyBetOrRaise', () => {
+  const buildPlayers = (): Player[] => [
+    { id: 'p1', name: 'Alice', seatIndex: 0, stack: 1000, state: 'ACTIVE' },
+    { id: 'p2', name: 'Bob', seatIndex: 1, stack: 800, state: 'ACTIVE' },
+    { id: 'p3', name: 'Carol', seatIndex: 2, stack: 600, state: 'ACTIVE' },
+  ];
+
+  const buildHandState = (overrides: Partial<HandState> = {}): HandState => ({
+    handNumber: 1,
+    dealerIndex: 0,
+    sbIndex: 1,
+    bbIndex: 2,
+    street: 'PREFLOP',
+    currentTurnPlayerId: 'p1',
+    currentBet: 0,
+    lastRaiseSize: 200,
+    reopenAllowed: true,
+    contribThisStreet: { p1: 0, p2: 0, p3: 0 },
+    pot: { main: 0, sides: [] },
+    actionLog: [],
+    ...overrides,
+  });
+
+  it('BETで現在ベットと上げ幅を更新し、支払いを反映する', () => {
+    const players = buildPlayers();
+    const hand = buildHandState();
+
+    const log = applyBetOrRaise(players, hand, 'BET', 400);
+
+    expect(log.type).toBe('BET');
+    expect(log.amount).toBe(400);
+    expect(hand.currentBet).toBe(400);
+    expect(hand.lastRaiseSize).toBe(400);
+    expect(players.find((p) => p.id === 'p1')?.stack).toBe(600);
+    expect(hand.pot.main).toBe(400);
+    expect(hand.currentTurnPlayerId).toBe('p2');
+  });
+
+  it('最小レイズを満たすRAISEでcurrentBet/lastRaiseSize/reopenAllowedを更新する', () => {
+    const players = buildPlayers();
+    const hand = buildHandState({
+      currentBet: 400,
+      lastRaiseSize: 400,
+      contribThisStreet: { p1: 400, p2: 400, p3: 0 },
+      pot: { main: 800, sides: [] },
+    });
+
+    const log = applyBetOrRaise(players, hand, 'RAISE', 800);
+
+    expect(log.type).toBe('RAISE');
+    expect(log.amount).toBe(800);
+    expect(hand.currentBet).toBe(800);
+    expect(hand.lastRaiseSize).toBe(400);
+    expect(hand.reopenAllowed).toBe(true);
+    expect(players.find((p) => p.id === 'p1')?.stack).toBe(600);
+    expect(hand.pot.main).toBe(1200);
+    expect(hand.currentTurnPlayerId).toBe('p2');
+  });
+
+  it('最小未満のオールインレイズではreopenAllowedをfalseにする', () => {
+    const players = buildPlayers();
+    players[2].stack = 200;
+    const hand = buildHandState({
+      currentBet: 800,
+      lastRaiseSize: 400,
+      contribThisStreet: { p1: 800, p2: 800, p3: 800 },
+      pot: { main: 2400, sides: [] },
+      currentTurnPlayerId: 'p3',
+    });
+
+    const log = applyBetOrRaise(players, hand, 'RAISE', 1000);
+
+    expect(log.type).toBe('RAISE');
+    expect(log.amount).toBe(1000);
+    expect(hand.currentBet).toBe(1000);
+    expect(hand.lastRaiseSize).toBe(400); // 直前の上げ幅を維持
+    expect(hand.reopenAllowed).toBe(false);
+    expect(players.find((p) => p.id === 'p3')?.state).toBe('ALL_IN');
   });
 });
