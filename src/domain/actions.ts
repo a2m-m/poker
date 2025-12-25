@@ -3,6 +3,8 @@ import type { ActionLogEntry, ActionType, HandState, Player, PlayerId } from './
 
 type HandForAction = Pick<HandState, 'currentBet' | 'contribThisStreet' | 'reopenAllowed'>;
 
+const cloneHandState = (hand: HandState): HandState => JSON.parse(JSON.stringify(hand)) as HandState;
+
 const isActive = (player: Player): boolean => player.state === 'ACTIVE';
 
 const canCheck = (callNeeded: number): boolean => callNeeded === 0;
@@ -66,8 +68,9 @@ type BasicAction = 'CHECK' | 'CALL' | 'FOLD';
 const appendActionLog = (
   hand: HandState,
   entry: Omit<ActionLogEntry, 'seq'>,
+  snapshot?: HandState,
 ): ActionLogEntry => {
-  const logged: ActionLogEntry = { ...entry, seq: hand.actionLog.length + 1 };
+  const logged: ActionLogEntry = { ...entry, seq: hand.actionLog.length + 1, snapshot };
   hand.actionLog.push(logged);
   return logged;
 };
@@ -92,6 +95,7 @@ export const applyBasicAction = (
   hand: HandState,
   action: BasicAction,
 ): ActionLogEntry => {
+  const handSnapshot = cloneHandState(hand);
   const player = findPlayerById(players, hand.currentTurnPlayerId);
   const callNeeded = calcCallNeeded(hand, player.id);
   let paid: number | undefined;
@@ -124,7 +128,7 @@ export const applyBasicAction = (
     playerId: player.id,
     amount: paid,
     street: hand.street,
-  });
+  }, handSnapshot);
 
   const nextPlayerId = findNextActivePlayerId(players, player.seatIndex);
   if (nextPlayerId) {
@@ -176,6 +180,7 @@ export const applyBetOrRaise = (
   action: BetOrRaise,
   amount: number,
 ): ActionLogEntry => {
+  const handSnapshot = cloneHandState(hand);
   const player = findPlayerById(players, hand.currentTurnPlayerId);
 
   if (action === 'BET') {
@@ -211,7 +216,7 @@ export const applyBetOrRaise = (
     playerId: player.id,
     amount: reached,
     street: hand.street,
-  });
+  }, handSnapshot);
 
   const nextPlayerId = findNextActivePlayerId(players, player.seatIndex);
   if (nextPlayerId) {
@@ -225,6 +230,7 @@ export const applyAllIn = (
   players: Player[],
   hand: HandState,
 ): ActionLogEntry => {
+  const handSnapshot = cloneHandState(hand);
   const player = findPlayerById(players, hand.currentTurnPlayerId);
 
   if (player.stack <= 0) {
@@ -260,7 +266,7 @@ export const applyAllIn = (
     playerId: player.id,
     amount: reached,
     street: hand.street,
-  });
+  }, handSnapshot);
 
   const nextPlayerId = findNextActivePlayerId(players, player.seatIndex);
   if (nextPlayerId) {
