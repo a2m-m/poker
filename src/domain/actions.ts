@@ -233,7 +233,6 @@ export const applyAllIn = (
 
   const prevCurrentBet = hand.currentBet;
   const prevLastRaise = hand.lastRaiseSize;
-  const contributed = hand.contribThisStreet[player.id] ?? 0;
 
   applyPayment(players, hand, player.id, player.stack);
 
