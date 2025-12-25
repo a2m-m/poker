@@ -384,4 +384,27 @@ describe('applyAllIn', () => {
     const snapshot = hand.actionLog.at(-1)?.snapshot;
     expect(snapshot).toEqual(before);
   });
+
+  it('最小未満ALL_IN後は既行動者が再度レイズできない', () => {
+    const players = buildPlayers();
+    players[0].stack = 2000;
+    players[1].stack = 2000;
+    players[2].stack = 200;
+
+    const hand = buildHandState({
+      currentBet: 800,
+      lastRaiseSize: 400,
+      contribThisStreet: { p1: 800, p2: 800, p3: 800 },
+      pot: { main: 2400, sides: [] },
+      currentTurnPlayerId: 'p3',
+    });
+
+    applyAllIn(players, hand);
+
+    expect(hand.reopenAllowed).toBe(false);
+    expect(hand.currentTurnPlayerId).toBe('p1');
+    expect(() => applyBetOrRaise(players, hand, 'RAISE', 1200)).toThrow(
+      'レイズできません：再オープンが許可されていません。',
+    );
+  });
 });
