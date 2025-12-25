@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { useGameState } from '../state/GameStateContext';
 import styles from './HomePage.module.css';
 
 interface HomePageProps {
@@ -12,12 +13,19 @@ interface HomePageProps {
 export function HomePage({ description }: HomePageProps) {
   const navigate = useNavigate();
   const [isResetDialogOpen, setResetDialogOpen] = useState(false);
+  const { gameState, clearGameState } = useGameState();
+
+  const hasGameState = useMemo(() => !!gameState, [gameState]);
 
   const handleNewGame = () => {
     navigate('/setup');
   };
 
   const handleResume = () => {
+    if (!hasGameState) {
+      navigate('/setup');
+      return;
+    }
     navigate('/table');
   };
 
@@ -27,6 +35,7 @@ export function HomePage({ description }: HomePageProps) {
 
   const handleResetConfirm = () => {
     setResetDialogOpen(false);
+    clearGameState();
   };
 
   const handleResetCancel = () => {
@@ -50,13 +59,16 @@ export function HomePage({ description }: HomePageProps) {
             <Button variant="primary" block onClick={handleNewGame}>
               新規ゲームを開始
             </Button>
-            <Button variant="secondary" block onClick={handleResume}>
+            <Button variant="secondary" block onClick={handleResume} disabled={!hasGameState}>
               前回を再開（デモ）
             </Button>
             <Button variant="danger" block onClick={handleResetRequest}>
               リセット（全削除）
             </Button>
           </div>
+          {!hasGameState && (
+            <p className={styles.note}>セットアップで開始すると「前回を再開」が有効になります。</p>
+          )}
           <p className={styles.note}>
             クリック時の遷移や確認ダイアログのみを仕込んだ静的バージョンです。保存や破棄の実処理は後続タスクで実装します。
           </p>

@@ -30,7 +30,7 @@ export function SetupPage({ description }: SetupPageProps) {
   const [ante, setAnte] = useState(0);
   const [newName, setNewName] = useState('田中');
   const [newStack, setNewStack] = useState(15000);
-  const [inlineMessage, setInlineMessage] = useState('2人以上で開始できます。');
+  const [inlineMessage, setInlineMessage] = useState('開始すると現在の設定がテーブルに反映されます。');
 
   const canStart = players.length >= 2;
 
@@ -101,9 +101,7 @@ export function SetupPage({ description }: SetupPageProps) {
       <div className={styles.header}>
         <h2 className={styles.sectionTitle}>セットアップ</h2>
         <p className={styles.lead}>{description}</p>
-        <p className={styles.note}>
-          プレイヤー編集とブラインド設定の入力枠を仮配置しています。開始ボタンはデモ遷移のみで、保存や検証は後続で実装します。
-        </p>
+        <p className={styles.note}>プレイヤー編集とブラインド設定の入力枠を仮配置しています。保存や検証は後続で実装します。</p>
       </div>
 
       <div className={styles.grid}>
@@ -258,10 +256,10 @@ export function SetupPage({ description }: SetupPageProps) {
 
       <Card eyebrow="Start" title="開始の確認" description="人数とブラインドの準備が整ったらテーブルへ進みます。">
         <div className={styles.footer}>
-          <p className={styles.sectionDescription}>開始ボタンはデモとして /table に遷移します。実際の検証は後続タスクで追加します。</p>
+          <p className={styles.sectionDescription}>現在の入力をもとに GameState を生成し、/table に反映します。</p>
           <p className={styles.sectionTitle}>{summaryText}</p>
           <Button variant="primary" onClick={handleStart} disabled={!canStart}>
-            テーブルを開く（デモ）
+            テーブルを開く
           </Button>
           {!canStart && <p className={styles.inlineError}>2人以上になるまで開始できません。</p>}
           <p className={styles.note}>{inlineMessage}</p>
