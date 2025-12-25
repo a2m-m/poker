@@ -1,5 +1,7 @@
+import { useEffect, useMemo, useState } from 'react';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
+import { useGameState } from '../state/GameStateContext';
 import styles from './ShowdownPage.module.css';
 
 interface ShowdownPageProps {
@@ -22,7 +24,7 @@ type PotEntry = {
   defaultWinners: string[];
 };
 
-const playerOptions: PlayerOption[] = [
+const demoPlayers: PlayerOption[] = [
   { id: 'p1', name: '佐藤', seat: 'BTN', stack: 18400 },
   { id: 'p2', name: '鈴木', seat: 'SB', stack: 15200 },
   { id: 'p3', name: '高橋', seat: 'BB', stack: 19200 },
@@ -30,7 +32,7 @@ const playerOptions: PlayerOption[] = [
   { id: 'p5', name: '伊藤', seat: 'CO', stack: 7800 },
 ];
 
-const potEntries: PotEntry[] = [
+const demoPotEntries: PotEntry[] = [
   {
     id: 'main',
     label: 'メインポット',
@@ -60,6 +62,76 @@ const potEntries: PotEntry[] = [
 const boardCards = ['A♠', 'K♦', '7♣', '5♥', '2♠'];
 
 export function ShowdownPage({ description }: ShowdownPageProps) {
+  const { gameState } = useGameState();
+
+  const players = useMemo<PlayerOption[]>(() => {
+    if (!gameState) return demoPlayers;
+
+    const { players: statePlayers, hand } = gameState;
+
+    const seatLabel = (seatIndex: number) => {
+      if (seatIndex === hand.dealerIndex) return 'BTN';
+      if (seatIndex === hand.sbIndex) return 'SB';
+      if (seatIndex === hand.bbIndex) return 'BB';
+      return `Seat ${seatIndex + 1}`;
+    };
+
+    return statePlayers
+      .slice()
+      .sort((a, b) => a.seatIndex - b.seatIndex)
+      .map((player) => ({
+        id: player.id,
+        name: player.name,
+        seat: seatLabel(player.seatIndex),
+        stack: player.stack,
+      }));
+  }, [gameState]);
+
+  const potEntries = useMemo<PotEntry[]>(() => {
+    if (!gameState) return demoPotEntries;
+
+    const activePlayerIds = gameState.players.filter((player) => player.state !== 'FOLDED').map((p) => p.id);
+    const entries: PotEntry[] = [
+      {
+        id: 'main',
+        label: 'メインポット',
+        amount: gameState.hand.pot.main,
+        note: 'フォールドしていないプレイヤー全員が対象です。',
+        eligiblePlayerIds: activePlayerIds,
+        defaultWinners: activePlayerIds.slice(0, 1),
+      },
+      ...gameState.hand.pot.sides.map((side, index) => ({
+        id: `side${index + 1}`,
+        label: `サイドポット${index + 1}`,
+        amount: side.amount,
+        note: `eligible ${side.eligiblePlayerIds.length} 名で争われます。`,
+        eligiblePlayerIds: side.eligiblePlayerIds,
+        defaultWinners: side.eligiblePlayerIds.slice(0, 1),
+      })),
+    ];
+
+    return entries.filter((entry) => entry.eligiblePlayerIds.length > 0);
+  }, [gameState]);
+
+  const [selectedWinners, setSelectedWinners] = useState<Record<string, string[]>>(() =>
+    Object.fromEntries(potEntries.map((pot) => [pot.id, pot.defaultWinners])),
+  );
+
+  useEffect(() => {
+    setSelectedWinners(Object.fromEntries(potEntries.map((pot) => [pot.id, pot.defaultWinners])));
+  }, [potEntries]);
+
+  const toggleWinner = (potId: string, playerId: string, eligible: boolean) => {
+    if (!eligible) return;
+
+    setSelectedWinners((prev) => {
+      const current = prev[potId] ?? [];
+      const exists = current.includes(playerId);
+      const nextList = exists ? current.filter((id) => id !== playerId) : [...current, playerId];
+      return { ...prev, [potId]: nextList };
+    });
+  };
+
   return (
     <div className={styles.page}>
       <header className={styles.header}>
@@ -159,16 +231,21 @@ export function ShowdownPage({ description }: ShowdownPageProps) {
               </div>
               <p className={styles.potNote}>{pot.note}</p>
               <div className={styles.winnerList} role="group" aria-label={`${pot.label}の勝者候補`}>
-                {playerOptions.map((player) => {
+                {players.map((player) => {
                   const eligible = pot.eligiblePlayerIds.includes(player.id);
-                  const prechecked = pot.defaultWinners.includes(player.id);
+                  const checked = selectedWinners[pot.id]?.includes(player.id) ?? false;
 
                   return (
                     <label
                       key={`${pot.id}-${player.id}`}
                       className={`${styles.winnerRow}${eligible ? '' : ` ${styles.disabled}`}`}
                     >
-                      <input type="checkbox" disabled={!eligible} defaultChecked={prechecked} />
+                      <input
+                        type="checkbox"
+                        disabled={!eligible}
+                        checked={checked}
+                        onChange={() => toggleWinner(pot.id, player.id, eligible)}
+                      />
                       <div className={styles.playerInfo}>
                         <span className={styles.playerName}>{player.name}</span>
                         <span className={styles.playerMeta}>
