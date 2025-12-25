@@ -44,10 +44,11 @@ const payBlind = (
   return pay;
 };
 
-const buildInitialHandState = (
+const buildHandState = (
   settings: GameSettings,
   players: Player[],
   dealerIndex: number,
+  handNumber: number,
 ): HandState => {
   const contribThisStreet = initializeContrib(players);
   const totalContribThisHand = initializeContrib(players);
@@ -62,7 +63,7 @@ const buildInitialHandState = (
   const potTotal = Object.values(contribThisStreet).reduce((sum, value) => sum + value, 0);
 
   return {
-    handNumber: INITIAL_HAND_NUMBER,
+    handNumber,
     dealerIndex,
     sbIndex,
     bbIndex,
@@ -91,10 +92,44 @@ export const createNewGame = (settings: GameSettings, playerSetups: PlayerSetup[
 
   const players = toPlayers(playerSetups);
   const dealerIndex = 0;
-  const hand = buildInitialHandState(normalizedSettings, players, dealerIndex);
+  const hand = buildHandState(normalizedSettings, players, dealerIndex, INITIAL_HAND_NUMBER);
 
   return {
     settings: normalizedSettings,
+    players,
+    hand,
+  };
+};
+
+const toActiveOrAllIn = (player: Player): Player => ({
+  ...player,
+  state: player.stack > 0 ? 'ACTIVE' : 'ALL_IN',
+});
+
+const calcNextDealerIndex = (players: Player[], currentDealerIndex: number): number => {
+  const activeSeats = players
+    .filter((player) => player.state === 'ACTIVE')
+    .map((player) => player.seatIndex)
+    .sort((a, b) => a - b);
+
+  if (activeSeats.length < 2) {
+    throw new Error('次のハンドを開始するには2人以上のアクティブなプレイヤーが必要です。');
+  }
+
+  const currentPosition = activeSeats.indexOf(currentDealerIndex);
+  const buttonPosition = currentPosition >= 0 ? currentPosition : 0;
+  return activeSeats[(buttonPosition + 1) % activeSeats.length];
+};
+
+export const startNextHand = (game: GameState): GameState => {
+  const players = game.players.map(toActiveOrAllIn);
+  const dealerIndex = calcNextDealerIndex(players, game.hand.dealerIndex);
+  const handNumber = game.hand.handNumber + 1;
+
+  const hand = buildHandState(game.settings, players, dealerIndex, handNumber);
+
+  return {
+    ...game,
     players,
     hand,
   };
