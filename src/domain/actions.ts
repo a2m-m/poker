@@ -72,6 +72,21 @@ const appendActionLog = (
   return logged;
 };
 
+const assertBettable = (hand: HandState) => {
+  if (hand.currentBet > 0) {
+    throw new Error('ベットできません：現在ベットが存在します。');
+  }
+};
+
+const assertRaisable = (hand: HandState) => {
+  if (hand.currentBet === 0) {
+    throw new Error('レイズできません：現在ベットがありません。');
+  }
+  if (!hand.reopenAllowed) {
+    throw new Error('レイズできません：再オープンが許可されていません。');
+  }
+};
+
 export const applyBasicAction = (
   players: Player[],
   hand: HandState,
@@ -108,6 +123,93 @@ export const applyBasicAction = (
     type: action,
     playerId: player.id,
     amount: paid,
+    street: hand.street,
+  });
+
+  const nextPlayerId = findNextActivePlayerId(players, player.seatIndex);
+  if (nextPlayerId) {
+    hand.currentTurnPlayerId = nextPlayerId;
+  }
+
+  return log;
+};
+
+type BetOrRaise = 'BET' | 'RAISE';
+
+const validateBetOrRaiseAmount = (
+  action: BetOrRaise,
+  hand: HandState,
+  player: Player,
+  amount: number,
+) => {
+  const contributed = hand.contribThisStreet[player.id] ?? 0;
+  const maxReachable = contributed + player.stack;
+
+  if (amount <= hand.currentBet) {
+    throw new Error('レイズ額は現在ベットを上回る必要があります。');
+  }
+
+  if (amount > maxReachable) {
+    throw new Error('スタックを超える額は指定できません。');
+  }
+
+  const minBet = hand.lastRaiseSize;
+  const minRaiseTo = hand.currentBet + hand.lastRaiseSize;
+
+  if (action === 'BET') {
+    if (maxReachable >= minBet && amount < minBet) {
+      throw new Error('ベット額が最小ベット未満です。');
+    }
+  } else {
+    if (maxReachable <= hand.currentBet) {
+      throw new Error('レイズできません：スタックが不足しています。');
+    }
+    if (maxReachable >= minRaiseTo && amount < minRaiseTo) {
+      throw new Error('レイズ額が最小レイズ未満です。');
+    }
+  }
+};
+
+export const applyBetOrRaise = (
+  players: Player[],
+  hand: HandState,
+  action: BetOrRaise,
+  amount: number,
+): ActionLogEntry => {
+  const player = findPlayerById(players, hand.currentTurnPlayerId);
+
+  if (action === 'BET') {
+    assertBettable(hand);
+  } else {
+    assertRaisable(hand);
+  }
+
+  validateBetOrRaiseAmount(action, hand, player, amount);
+
+  const prevCurrentBet = hand.currentBet;
+  const prevLastRaise = hand.lastRaiseSize;
+  const contributed = hand.contribThisStreet[player.id] ?? 0;
+  const payAmount = Math.max(0, amount - contributed);
+
+  applyPayment(players, hand, player.id, payAmount);
+
+  const reached = hand.contribThisStreet[player.id] ?? 0;
+  const raiseSize = reached - prevCurrentBet;
+  const isFullRaise = raiseSize >= prevLastRaise;
+
+  hand.currentBet = Math.max(hand.currentBet, reached);
+
+  if (action === 'BET' || isFullRaise) {
+    hand.lastRaiseSize = raiseSize;
+    hand.reopenAllowed = true;
+  } else {
+    hand.reopenAllowed = false;
+  }
+
+  const log = appendActionLog(hand, {
+    type: action,
+    playerId: player.id,
+    amount: reached,
     street: hand.street,
   });
 
