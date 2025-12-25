@@ -14,23 +14,28 @@ const isGameStateLike = (value: unknown): value is GameState => {
   );
 };
 
-export const loadPersistedGameState = (): GameState | null => {
-  if (!isBrowser) return null;
+export type PersistedStateLoadResult = {
+  state: GameState | null;
+  wasCorrupted: boolean;
+};
+
+export const loadPersistedGameState = (): PersistedStateLoadResult => {
+  if (!isBrowser) return { state: null, wasCorrupted: false };
 
   const raw = window.localStorage.getItem(storageKeys.gameState);
-  if (!raw) return null;
+  if (!raw) return { state: null, wasCorrupted: false };
 
   try {
     const parsed = JSON.parse(raw);
     if (!isGameStateLike(parsed)) {
       window.localStorage.removeItem(storageKeys.gameState);
-      return null;
+      return { state: null, wasCorrupted: true };
     }
-    return parsed;
+    return { state: parsed, wasCorrupted: false };
   } catch (error) {
     console.warn('保存済みのゲーム状態の読み込みに失敗しました', error);
     window.localStorage.removeItem(storageKeys.gameState);
-    return null;
+    return { state: null, wasCorrupted: true };
   }
 };
 

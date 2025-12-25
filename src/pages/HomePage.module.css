@@ -23,6 +23,26 @@
   color: var(--text-secondary);
 }
 
+.warning {
+  margin: 0;
+  padding: 0.85rem 0.9rem;
+  border-radius: 12px;
+  border: 1px solid var(--border-strong);
+  background: rgba(255, 99, 71, 0.08);
+}
+
+.warningTitle {
+  margin: 0;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.warningBody {
+  margin: 0.2rem 0 0;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
 .actions {
   display: flex;
   flex-direction: column;

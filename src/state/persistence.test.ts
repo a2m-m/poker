@@ -24,7 +24,7 @@ describe('persistence helpers', () => {
   });
 
   it('returns null when nothing is stored', () => {
-    expect(loadPersistedGameState()).toBeNull();
+    expect(loadPersistedGameState()).toEqual({ state: null, wasCorrupted: false });
   });
 
   it('persists and restores a game state', () => {
@@ -34,14 +34,22 @@ describe('persistence helpers', () => {
 
     const restored = loadPersistedGameState();
 
-    expect(restored?.players[0].name).toBe('Alice');
-    expect(restored?.hand.currentBet).toBeGreaterThan(0);
+    expect(restored.state?.players[0].name).toBe('Alice');
+    expect(restored.state?.hand.currentBet).toBeGreaterThan(0);
+    expect(restored.wasCorrupted).toBe(false);
   });
 
   it('ignores malformed JSON and clears storage', () => {
     window.localStorage.setItem(storageKeys.gameState, '{invalid-json');
 
-    expect(loadPersistedGameState()).toBeNull();
+    expect(loadPersistedGameState()).toEqual({ state: null, wasCorrupted: true });
+    expect(window.localStorage.getItem(storageKeys.gameState)).toBeNull();
+  });
+
+  it('ignores malformed object shape and reports corruption', () => {
+    window.localStorage.setItem(storageKeys.gameState, JSON.stringify({ foo: 'bar' }));
+
+    expect(loadPersistedGameState()).toEqual({ state: null, wasCorrupted: true });
     expect(window.localStorage.getItem(storageKeys.gameState)).toBeNull();
   });
 
@@ -51,6 +59,6 @@ describe('persistence helpers', () => {
 
     clearPersistedGameState();
 
-    expect(loadPersistedGameState()).toBeNull();
+    expect(loadPersistedGameState()).toEqual({ state: null, wasCorrupted: false });
   });
 });

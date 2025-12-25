@@ -13,7 +13,7 @@ interface HomePageProps {
 export function HomePage({ description }: HomePageProps) {
   const navigate = useNavigate();
   const [isResetDialogOpen, setResetDialogOpen] = useState(false);
-  const { gameState, clearGameState } = useGameState();
+  const { gameState, clearGameState, hasCorruptedSave } = useGameState();
 
   const hasGameState = useMemo(() => !!gameState, [gameState]);
 
@@ -55,6 +55,14 @@ export function HomePage({ description }: HomePageProps) {
             「新規開始」「再開」「リセット」の 3 操作を起点に、セットアップやテーブル表示へ進むホーム画面です。
             まだロジックは仮ですが、導線の位置とトーンを固定しておきます。
           </p>
+          {hasCorruptedSave && (
+            <div className={styles.warning} role="alert">
+              <p className={styles.warningTitle}>保存データをリセットしました</p>
+              <p className={styles.warningBody}>
+                破損した保存データを検出したため削除しました。新規ゲームを開始するか、必要に応じてリセットを実行してください。
+              </p>
+            </div>
+          )}
           <div className={styles.actions}>
             <Button variant="primary" block onClick={handleNewGame}>
               新規ゲームを開始
