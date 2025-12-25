@@ -34,6 +34,8 @@ const buildHand = (overrides: Partial<HandState> = {}): HandState => {
   };
 };
 
+const cloneHand = (hand: HandState): HandState => JSON.parse(JSON.stringify(hand)) as HandState;
+
 describe('getAvailableActions', () => {
   it('コール必要額が0ならCHECKが可能になる', () => {
     const player = buildPlayer();
@@ -165,6 +167,22 @@ describe('applyBasicAction', () => {
     expect(players[0].state).toBe('FOLDED');
     expect(hand.currentTurnPlayerId).toBe('p3');
   });
+
+  it('アクション前のHandStateをスナップショットとしてログに保持する', () => {
+    const players = buildPlayers();
+    const hand = buildHandState({
+      currentBet: 300,
+      contribThisStreet: { p1: 100, p2: 300, p3: 0 },
+      pot: { main: 400, sides: [] },
+    });
+    const before = cloneHand(hand);
+
+    applyBasicAction(players, hand, 'CALL');
+
+    const snapshot = hand.actionLog.at(-1)?.snapshot;
+    expect(snapshot).toEqual(before);
+    expect(snapshot?.actionLog).toEqual(before.actionLog);
+  });
 });
 
 describe('applyBetOrRaise', () => {
@@ -251,6 +269,17 @@ describe('applyBetOrRaise', () => {
     expect(hand.lastRaiseSize).toBe(400); // 直前の上げ幅を維持
     expect(hand.reopenAllowed).toBe(false);
     expect(players.find((p) => p.id === 'p3')?.state).toBe('ALL_IN');
+  });
+
+  it('BET/RAISEでも実行前のスナップショットを記録する', () => {
+    const players = buildPlayers();
+    const hand = buildHandState({ contribThisStreet: { p1: 0, p2: 0, p3: 0 } });
+    const before = cloneHand(hand);
+
+    applyBetOrRaise(players, hand, 'BET', 400);
+
+    const snapshot = hand.actionLog.at(-1)?.snapshot;
+    expect(snapshot).toEqual(before);
   });
 });
 
@@ -342,5 +371,17 @@ describe('applyAllIn', () => {
     expect(players[2].state).toBe('ALL_IN');
     expect(hand.pot.main).toBe(2600);
     expect(hand.currentTurnPlayerId).toBe('p1');
+  });
+
+  it('ALL_INでも実行前のスナップショットを保持する', () => {
+    const players = buildPlayers();
+    players[0].stack = 600;
+    const hand = buildHandState();
+    const before = cloneHand(hand);
+
+    applyAllIn(players, hand);
+
+    const snapshot = hand.actionLog.at(-1)?.snapshot;
+    expect(snapshot).toEqual(before);
   });
 });
