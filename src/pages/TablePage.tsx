@@ -4,38 +4,23 @@ import { ActionModal } from '../components/ActionModal';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { PotPanel } from '../components/PotPanel';
-import { PlayerCard, type PlayerRole, type PlayerStatus } from '../components/PlayerCard';
+import { PlayerCard, type PlayerStatus } from '../components/PlayerCard';
 import { StatusBar } from '../components/StatusBar';
 import { TurnPanel } from '../components/TurnPanel';
-import { calcCallNeeded, calcMinRaiseTo } from '../domain/bets';
-import { ActionLogEntry, ActionType, HandState, PlayerState, Street } from '../domain/types';
+import { calcCallNeeded } from '../domain/bets';
+import { ActionLogEntry, ActionType, HandState, PlayerState } from '../domain/types';
 import { useGameState } from '../state/GameStateContext';
+import { buildTableViewModel, getRoleForIndex } from '../state/tableSelectors';
 import styles from './TablePage.module.css';
 
 interface TablePageProps {
   description: string;
 }
 
-const streetLabels: Record<Street, string> = {
-  PREFLOP: 'プリフロップ',
-  FLOP: 'フロップ',
-  TURN: 'ターン',
-  RIVER: 'リバー',
-  SHOWDOWN: 'ショーダウン',
-  PAYOUT: '配当',
-};
-
 const statusText: Record<PlayerState, PlayerStatus> = {
   ACTIVE: '参加中',
   FOLDED: 'フォールド',
   ALL_IN: 'オールイン',
-};
-
-const getRoleForIndex = (hand: { dealerIndex: number; sbIndex: number; bbIndex: number }, seatIndex: number): PlayerRole | undefined => {
-  if (seatIndex === hand.dealerIndex) return 'D';
-  if (seatIndex === hand.sbIndex) return 'SB';
-  if (seatIndex === hand.bbIndex) return 'BB';
-  return undefined;
 };
 
 const cloneHandState = (hand: HandState): HandState => JSON.parse(JSON.stringify(hand)) as HandState;
@@ -72,16 +57,18 @@ export function TablePage({ description }: TablePageProps) {
   }
 
   const { players, hand } = gameState;
-  const turnPlayer = players.find((player) => player.id === hand.currentTurnPlayerId);
-  const turnRole = turnPlayer ? getRoleForIndex(hand, turnPlayer.seatIndex) : undefined;
-  const callNeeded = turnPlayer ? calcCallNeeded(hand, turnPlayer.id) : 0;
-  const minRaiseTo = calcMinRaiseTo(hand);
+  const {
+    statusBarProps,
+    turnPanelProps,
+    potPanelProps,
+    turnPlayer,
+    turnRole,
+    callNeeded,
+    minRaiseTo,
+    potTotal,
+  } = buildTableViewModel(players, hand);
+
   const canRaise = minRaiseTo !== null;
-  const minRaiseText = minRaiseTo?.toLocaleString() ?? '—';
-  const potTotal = hand.pot.main + hand.pot.sides.reduce((sum, side) => sum + side.amount, 0);
-  const buttonPlayer = players.find((player) => player.seatIndex === hand.dealerIndex)?.name ?? '—';
-  const smallBlindPlayer = players.find((player) => player.seatIndex === hand.sbIndex)?.name ?? '—';
-  const bigBlindPlayer = players.find((player) => player.seatIndex === hand.bbIndex)?.name ?? '—';
   const raiseDisabledReason = hand.currentBet === 0 ? '現在ベットがあるときのみ' : '最小レイズ未満のオールインにより再オープンしていません';
 
   const appendDemoLog = () => {
@@ -178,51 +165,24 @@ export function TablePage({ description }: TablePageProps) {
         </div>
         <p className={styles.lead}>{description}</p>
         <p className={styles.note}>
-          状態バー / ポット表示 / プレイヤーリスト / 手番エリアを配置したレイアウトデモです。セットアップで入力した値を
-          そのまま反映し、手番や必要額が更新される様子を確認できます。
+          ステータスバー、中央のポット表示、下部の手番パネルを上下に固定したレイアウトデモです。横持ちでも中央が崩れ
+          ないよう余白を確保し、セットアップで入力した値をそのまま反映します。
         </p>
       </header>
 
-      <Card
-        eyebrow="Status Bar"
-        title="ステータスバー"
-        description="ハンド進行中に常時表示するステータスの配置サンプルです。"
-      >
-        <StatusBar
-          handNumber={hand.handNumber}
-          street={streetLabels[hand.street]}
-          goal="全員の投入額を揃えます"
-          currentBet={hand.currentBet}
-          callNeeded={callNeeded}
-          minRaise={minRaiseTo}
-          buttonPlayer={buttonPlayer}
-          smallBlindPlayer={smallBlindPlayer}
-          bigBlindPlayer={bigBlindPlayer}
-        />
-      </Card>
-
-      <div className={styles.topGrid}>
-      <Card
-        eyebrow="Pot"
-        title="ポット表示"
-        description="合計と内訳をまとめた中央エリアの想定です。折りたたみ可能なリストを置く余白を確保しています。"
-      >
-          <PotPanel pot={hand.pot} players={players} />
-      </Card>
-
-        <Card
-          eyebrow="Turn"
-          title="手番エリア"
-          description="「手番 / 必要 / 可能」を3行で固定表示する領域です。ボタンとは分けて目視しやすくしています。"
-        >
-          <TurnPanel
-            turnPlayer={turnPlayer?.name ?? '—'}
-            positionLabel={turnRole ?? '参加者'}
-            requiredText={`コール ${callNeeded.toLocaleString()}（継続）`}
-            availableText={`チェック / レイズは ${minRaiseText} 以上 / オールイン ${(turnPlayer?.stack ?? 0).toLocaleString()}`}
-          />
-        </Card>
-      </div>
+      <section className={styles.tableFrame} aria-label="テーブルレイアウト">
+        <div className={styles.statusRow}>
+          <StatusBar {...statusBarProps} />
+        </div>
+        <div className={styles.middleRow}>
+          <div className={styles.potAnchor}>
+            <PotPanel {...potPanelProps} />
+          </div>
+        </div>
+        <div className={styles.turnRow}>
+          <TurnPanel {...turnPanelProps} />
+        </div>
+      </section>
 
       <div className={styles.mainGrid}>
         <Card
@@ -289,7 +249,9 @@ export function TablePage({ description }: TablePageProps) {
               </NavLink>
             </div>
             <p className={styles.actionNote}>
-              モーダルを開くとアクション候補とベット/レイズ時の金額入力UIが表示されます。ここでは見た目と導線のみを固定しつつ、共有状態から値を受け取っています。ログ件数は現在 {hand.actionLog.length} 件で、Undo ボタンを押すと直近 1 件を巻き戻します。
+              モーダルを開くとアクション候補とベット/レイズ時の金額入力UIが表示されます。ここでは見た目と導線のみを
+              固定しつつ、共有状態から値を受け取っています。ログ件数は現在 {hand.actionLog.length} 件で、Undo ボタンを
+              押すと直近 1 件を巻き戻します。
             </p>
           </div>
         </Card>

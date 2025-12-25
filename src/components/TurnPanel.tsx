@@ -26,11 +26,9 @@ export type TurnPanelProps = {
 };
 
 export function TurnPanel({ turnPlayer, positionLabel, requiredText, availableText }: TurnPanelProps) {
-  const playerDisplay = turnPlayer || '—';
-
   return (
     <div className={styles.turnPanel} aria-label="手番情報">
-      <TurnRow label="手番" value={playerDisplay} note={positionLabel} />
+      <TurnRow label="手番" value={turnPlayer} note={positionLabel} />
       <TurnRow label="必要" value={requiredText} />
       <TurnRow label="可能" value={availableText} />
     </div>

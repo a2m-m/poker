@@ -1,15 +1,17 @@
 import styles from './StatusBar.module.css';
 
 type StatusBarProps = {
-  handNumber: number | string;
-  street: string;
-  goal: string;
-  currentBet: number;
-  callNeeded: number;
-  minRaise: number | null;
-  buttonPlayer?: string;
-  smallBlindPlayer?: string;
-  bigBlindPlayer?: string;
+  handLabel: string;
+  streetLabel: string;
+  goalText: string;
+  currentBetText: string;
+  callNeededText: string;
+  callHighlight?: boolean;
+  minRaiseText: string;
+  buttonLabel: string;
+  buttonBadge?: string;
+  blindLabel: string;
+  blindBadge?: string;
 };
 
 type StatusItemProps = {
@@ -35,30 +37,28 @@ function StatusItem({ label, value, badge, highlight, emphasize }: StatusItemPro
 }
 
 export function StatusBar({
-  handNumber,
-  street,
-  goal,
-  currentBet,
-  callNeeded,
-  minRaise,
-  buttonPlayer,
-  smallBlindPlayer,
-  bigBlindPlayer,
+  handLabel,
+  streetLabel,
+  goalText,
+  currentBetText,
+  callNeededText,
+  callHighlight,
+  minRaiseText,
+  buttonLabel,
+  buttonBadge,
+  blindLabel,
+  blindBadge,
 }: StatusBarProps) {
-  const buttonDisplay = buttonPlayer ?? '—';
-  const blindDisplay = `${smallBlindPlayer ?? '—'} / ${bigBlindPlayer ?? '—'}`;
-  const minRaiseDisplay = minRaise !== null ? minRaise.toLocaleString() : '—';
-
   return (
     <div className={styles.statusBar} aria-label="ステータスバー">
-      <StatusItem label="ハンド" value={`#${handNumber}`} />
-      <StatusItem label="ストリート" value={street} />
-      <StatusItem label="目標" value={goal} emphasize />
-      <StatusItem label="現在ベット" value={currentBet.toLocaleString()} />
-      <StatusItem label="コール必要額" value={callNeeded.toLocaleString()} highlight={callNeeded > 0} />
-      <StatusItem label="最小レイズ" value={minRaiseDisplay} />
-      <StatusItem label="ボタン" value={buttonDisplay} badge={buttonPlayer ? 'D' : undefined} />
-      <StatusItem label="ブラインド" value={blindDisplay} badge={smallBlindPlayer || bigBlindPlayer ? 'SB / BB' : undefined} />
+      <StatusItem label="ハンド" value={handLabel} />
+      <StatusItem label="ストリート" value={streetLabel} />
+      <StatusItem label="目標" value={goalText} emphasize />
+      <StatusItem label="現在ベット" value={currentBetText} />
+      <StatusItem label="コール必要額" value={callNeededText} highlight={callHighlight} />
+      <StatusItem label="最小レイズ" value={minRaiseText} />
+      <StatusItem label="ボタン" value={buttonLabel} badge={buttonBadge} />
+      <StatusItem label="ブラインド" value={blindLabel} badge={blindBadge} />
     </div>
   );
 }
