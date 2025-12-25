@@ -1,5 +1,26 @@
 import { render, screen, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('./state/persistence', async () => {
+  const actual = await vi.importActual<typeof import('./state/persistence')>(
+    './state/persistence',
+  );
+  const { createNewGame } = await import('./domain/game');
+
+  const mockGameState = createNewGame(
+    { sb: 50, bb: 100, roundingRule: 'BUTTON_NEAR', burnCard: true },
+    [
+      { id: 'p1', name: 'Alice', stack: 1000 },
+      { id: 'p2', name: 'Bob', stack: 1000 },
+    ],
+  );
+
+  return {
+    ...actual,
+    loadPersistedGameState: () => ({ state: mockGameState, wasCorrupted: false }),
+  };
+});
+
 import App from './App';
 
 describe('App', () => {
