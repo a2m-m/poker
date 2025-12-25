@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { distribute, type PotWinners } from './distribution';
+import { calcPayoutShares, distribute, type PotWinners } from './distribution';
 import type { Player, PotState } from './types';
 
 const buildPlayer = (overrides: Partial<Player> = {}): Player => ({
@@ -71,5 +71,28 @@ describe('distribute', () => {
       p2: 45,
       p3: 95,
     });
+  });
+});
+
+describe('calcPayoutShares', () => {
+  const players: Player[] = [
+    buildPlayer({ id: 'p1', name: 'Alice', seatIndex: 0 }),
+    buildPlayer({ id: 'p2', name: 'Bob', seatIndex: 1 }),
+    buildPlayer({ id: 'p3', name: 'Carol', seatIndex: 2 }),
+  ];
+
+  it('単一ポットの配当を計算し、端数はボタンに近い勝者へ付与する', () => {
+    const payouts = calcPayoutShares(players, 1, 101, ['p1', 'p3']);
+
+    expect(payouts).toEqual({
+      p1: 50,
+      p3: 51,
+    });
+  });
+
+  it('勝者が空のときは配当しない', () => {
+    const payouts = calcPayoutShares(players, 0, 500, []);
+
+    expect(payouts).toEqual({});
   });
 });
