@@ -6,7 +6,7 @@ import { Card } from '../components/Card';
 import { PlayerCard, type PlayerRole, type PlayerStatus } from '../components/PlayerCard';
 import { StatusBar } from '../components/StatusBar';
 import { TurnPanel } from '../components/TurnPanel';
-import { ActionLogEntry, ActionType, PlayerState, Street } from '../domain/types';
+import { ActionLogEntry, ActionType, HandState, PlayerState, Street } from '../domain/types';
 import { useGameState } from '../state/GameStateContext';
 import styles from './TablePage.module.css';
 
@@ -43,6 +43,8 @@ const calcCallNeeded = (hand: { currentBet: number; contribThisStreet: Record<st
 
 const calcPotTotal = (pot: { main: number; sides: { amount: number }[] }) =>
   pot.main + pot.sides.reduce((sum, side) => sum + side.amount, 0);
+
+const cloneHandState = (hand: HandState): HandState => JSON.parse(JSON.stringify(hand)) as HandState;
 
 export function TablePage({ description }: TablePageProps) {
   const { gameState, updateGameState } = useGameState();
@@ -105,13 +107,63 @@ export function TablePage({ description }: TablePageProps) {
         playerId: turn.id,
         amount,
         street: prev.hand.street,
+        snapshot: cloneHandState(prev.hand),
       };
+
+      const contribThisStreet = { ...prev.hand.contribThisStreet };
+      if (amount) {
+        contribThisStreet[turn.id] = (contribThisStreet[turn.id] ?? 0) + amount;
+      }
+
+      const pot = {
+        ...prev.hand.pot,
+        main: prev.hand.pot.main + (amount ?? 0),
+      };
+
+      const currentBet = amount ? Math.max(prev.hand.currentBet, contribThisStreet[turn.id] ?? 0) : prev.hand.currentBet;
+      const lastRaiseSize = type === 'RAISE' && amount ? Math.max(0, amount - prev.hand.currentBet) : prev.hand.lastRaiseSize;
+
+      const currentIndex = prev.players.findIndex((player) => player.id === turn.id);
+      const nextPlayer = prev.players[(currentIndex + 1) % prev.players.length];
 
       return {
         ...prev,
         hand: {
           ...prev.hand,
+          currentTurnPlayerId: nextPlayer?.id ?? prev.hand.currentTurnPlayerId,
+          currentBet,
+          lastRaiseSize,
+          contribThisStreet,
+          pot,
           actionLog: [...prev.hand.actionLog, entry],
+        },
+      };
+    });
+  };
+
+  const handleUndo = () => {
+    updateGameState((prev) => {
+      if (!prev) return prev;
+      if (prev.hand.actionLog.length === 0) return prev;
+
+      const lastEntry = prev.hand.actionLog.at(-1);
+      const trimmedLog = prev.hand.actionLog.slice(0, -1);
+
+      if (!lastEntry?.snapshot) {
+        return {
+          ...prev,
+          hand: {
+            ...prev.hand,
+            actionLog: trimmedLog,
+          },
+        };
+      }
+
+      return {
+        ...prev,
+        hand: {
+          ...lastEntry.snapshot,
+          actionLog: trimmedLog,
         },
       };
     });
@@ -227,7 +279,7 @@ export function TablePage({ description }: TablePageProps) {
               <Button variant="primary" block onClick={() => setActionModalOpen(true)}>
                 アクションを入力（モーダル想定）
               </Button>
-              <Button variant="undo" block>
+              <Button variant="undo" block onClick={handleUndo}>
                 Undo（直前を取り消す）
               </Button>
             </div>
@@ -248,8 +300,7 @@ export function TablePage({ description }: TablePageProps) {
               </NavLink>
             </div>
             <p className={styles.actionNote}>
-              モーダルを開くとアクション候補とベット/レイズ時の金額入力UIが表示されます。ここでは見た目と導線のみを固定し
-              つつ、共有状態から値を受け取っています。
+              モーダルを開くとアクション候補とベット/レイズ時の金額入力UIが表示されます。ここでは見た目と導線のみを固定しつつ、共有状態から値を受け取っています。ログ件数は現在 {hand.actionLog.length} 件で、Undo ボタンを押すと直近 1 件を巻き戻します。
             </p>
           </div>
         </Card>
