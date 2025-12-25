@@ -67,4 +67,28 @@ describe('recalcPots', () => {
     ]);
     expect(pot.sides[0].eligiblePlayerIds).not.toContain('p4');
   });
+
+  it('複数のオールインでサイドポットを段階的に生成する', () => {
+    const players: Player[] = [
+      buildPlayer({ id: 'p1', name: 'Alice', state: 'ACTIVE' }),
+      buildPlayer({ id: 'p2', name: 'Bob', state: 'ALL_IN' }),
+      buildPlayer({ id: 'p3', name: 'Carol', state: 'ALL_IN' }),
+      buildPlayer({ id: 'p4', name: 'Dave', state: 'ACTIVE' }),
+    ];
+
+    const pot = recalcPots(players, { p1: 1000, p2: 600, p3: 300, p4: 1000 });
+
+    expect(pot.main).toBe(1200);
+    expect(pot.sides).toEqual([
+      {
+        amount: 900,
+        eligiblePlayerIds: ['p1', 'p2', 'p4'],
+      },
+      {
+        amount: 800,
+        eligiblePlayerIds: ['p1', 'p4'],
+      },
+    ]);
+    expect(pot.sides[0].eligiblePlayerIds).not.toContain('p3');
+  });
 });
