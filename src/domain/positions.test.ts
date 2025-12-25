@@ -38,6 +38,34 @@ describe('calcBlindIndices', () => {
     expect(bbIndex).toBe(4);
   });
 
+  it('3人卓でボタンが一番右ならSB/BBは座席順に繰り上がる', () => {
+    const threePlayers: Player[] = [
+      { id: 'p1', name: 'CO', seatIndex: 0, stack: 5000, state: 'ACTIVE' },
+      { id: 'p2', name: 'SB候補', seatIndex: 1, stack: 5000, state: 'ACTIVE' },
+      { id: 'p3', name: 'ボタン', seatIndex: 2, stack: 5000, state: 'ACTIVE' },
+    ];
+
+    const { sbIndex, bbIndex } = calcBlindIndices(threePlayers, 2);
+
+    expect(sbIndex).toBe(0);
+    expect(bbIndex).toBe(1);
+  });
+
+  it('5人卓で途中のフォールド者を飛ばしてSB/BBを決める', () => {
+    const playersWithFold: Player[] = [
+      { id: 'p1', name: 'ボタン', seatIndex: 0, stack: 5000, state: 'ACTIVE' },
+      { id: 'p2', name: 'スモール候補', seatIndex: 1, stack: 5000, state: 'ACTIVE' },
+      { id: 'p3', name: 'フォールド', seatIndex: 2, stack: 5000, state: 'FOLDED' },
+      { id: 'p4', name: 'ビッグ候補', seatIndex: 3, stack: 5000, state: 'ACTIVE' },
+      { id: 'p5', name: 'UTG', seatIndex: 4, stack: 5000, state: 'ACTIVE' },
+    ];
+
+    const { sbIndex, bbIndex } = calcBlindIndices(playersWithFold, 0);
+
+    expect(sbIndex).toBe(1);
+    expect(bbIndex).toBe(3);
+  });
+
   it('アクティブプレイヤーが1人の場合はエラーを投げる', () => {
     const singlePlayer: Player[] = [
       { id: 'p1', name: 'Only', seatIndex: 0, stack: 1000, state: 'ACTIVE' },
