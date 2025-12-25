@@ -18,6 +18,12 @@ npm run build # 本番ビルド
 
 `main` ブランチへの push をトリガーに、`.github/workflows/deploy.yml` がビルド成果物を GitHub Pages に自動デプロイします。ページはリポジトリ名に合わせて `/poker/` 配下に配置されるため、Vite の `base` も同じパスに設定しています。
 
+### GitHub Pages 動作確認のポイント
+
+- ローカルで `npm run build && npm run preview -- --host` を実行し、`http://localhost:4173/poker/#/table` などハッシュ付き URL で直接アクセス・リロードしても 404 にならないことを確認できます。
+- セットアップからゲームを開始し、テーブルでリロード後に「前回を再開」が有効になることを確認すると、Pages 配信時の永続化（localStorage）も検証できます。
+- iPad Safari での縦横回転やアドレスバーの表示/非表示による高さ揺れを抑えるため、`#root` は動的ビューポート（`100dvh`）を優先しています。
+
 ## ルーティング方針
 
 GitHub Pages へのデプロイを想定し、サーバー側での 404 ハンドリングに依存しないよう `HashRouter` を採用しています。`/#/table` のようにハッシュ付きの URL になるため、直リンクやリロードでも安全に各ページへ遷移できます。
