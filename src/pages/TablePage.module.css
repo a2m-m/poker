@@ -44,6 +44,8 @@
   .topGrid {
     grid-template-columns: 1fr;
   }
+}
+
 .mainGrid {
   display: grid;
   gap: var(--grid-gap);
