@@ -15,6 +15,7 @@ import { useGameState } from '../state/GameStateContext';
 import { describeActionAvailability } from '../domain/actions';
 import { buildTableViewModel, getRoleForIndex } from '../state/tableSelectors';
 import { applyPlayerActionToState, PlayerActionInput } from '../state/actions';
+import { useGameMachine } from '../state/gameMachine';
 import styles from './TablePage.module.css';
 
 interface TablePageProps {
@@ -34,6 +35,7 @@ export function TablePage({ description }: TablePageProps) {
   const { gameState, updateGameState } = useGameState();
   const [actionModalOpen, setActionModalOpen] = useState(false);
   const { pushToast } = useToast();
+  const { goToShowdown, returnToTablePhase, currentPhase } = useGameMachine();
 
   if (!gameState) {
     return (
@@ -255,6 +257,18 @@ export function TablePage({ description }: TablePageProps) {
             logCount={hand.actionLog.length}
             isUndoDisabled={hand.actionLog.length === 0}
           />
+          <div className={styles.navLinks}>
+            <Button
+              variant="secondary"
+              onClick={returnToTablePhase}
+              disabled={!gameState || currentPhase !== 'TABLE'}
+            >
+              戻る
+            </Button>
+            <Button variant="primary" onClick={goToShowdown} disabled={!gameState}>
+              次へ
+            </Button>
+          </div>
           <div className={styles.navLinks}>
             <NavLink to="/log" className={styles.textLink}>
               /log に移動して履歴を一覧

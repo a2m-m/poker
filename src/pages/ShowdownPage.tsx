@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { buildPotBreakdown, buildPotWinnersFromSelection } from '../domain/pot';
@@ -63,9 +62,8 @@ const attachNotes = (pots: PotBreakdown[]): PotEntry[] =>
   }));
 
 export function ShowdownPage({ description }: ShowdownPageProps) {
-  const navigate = useNavigate();
   const { gameState } = useGameState();
-  const { settleShowdown } = useGameMachine();
+  const { settleShowdown, returnToTablePhase, currentPhase } = useGameMachine();
 
   const seatLabel = useMemo(() => {
     if (!gameState) return (seatIndex: number) => demoSeatLabels[demoPlayers[seatIndex]?.id] ?? `Seat ${seatIndex + 1}`;
@@ -119,7 +117,7 @@ export function ShowdownPage({ description }: ShowdownPageProps) {
   const handleConfirm = () => {
     const winners = buildPotWinnersFromSelection(potEntries, selectedWinners);
     if (!gameState) {
-      navigate('/payout');
+      window.location.hash = '#/payout';
       return;
     }
     settleShowdown(winners);
@@ -189,11 +187,21 @@ export function ShowdownPage({ description }: ShowdownPageProps) {
               ConfirmDialog での確認を想定しつつ、このデモでは直接 /payout に遷移します。
             </p>
             <div className={styles.buttonRow}>
-              <Button variant="primary" block onClick={handleConfirm}>
-                配当を確定して結果へ進む
+              <Button
+                variant="secondary"
+                block
+                onClick={() => {
+                  if (!gameState) {
+                    window.location.hash = '#/table';
+                    return;
+                  }
+                  returnToTablePhase();
+                }}
+              >
+                戻る
               </Button>
-              <Button variant="secondary" block onClick={() => navigate('/table')}>
-                テーブルへ戻る
+              <Button variant="primary" block onClick={handleConfirm} disabled={currentPhase === 'PAYOUT'}>
+                次へ
               </Button>
               <Button variant="danger" block onClick={resetSelection}>
                 選択をリセット
