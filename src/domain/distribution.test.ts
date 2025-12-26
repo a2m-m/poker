@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { calcPayoutShares, distribute, type PotWinners } from './distribution';
-import type { Player, PotState } from './types';
+import { calcPayoutShares, distribute } from './distribution';
+import type { Player, PotState, PotWinners } from './types';
 
 const buildPlayer = (overrides: Partial<Player> = {}): Player => ({
   id: 'p1',

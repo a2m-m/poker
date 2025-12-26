@@ -6,6 +6,18 @@ export type PlayerState = 'ACTIVE' | 'FOLDED' | 'ALL_IN';
 
 export type Street = 'PREFLOP' | 'FLOP' | 'TURN' | 'RIVER' | 'SHOWDOWN' | 'PAYOUT';
 
+export type PotBreakdown = {
+  id: string;
+  label: string;
+  amount: number;
+  eligiblePlayerIds: PlayerId[];
+};
+
+export type PotWinners = {
+  main: PlayerId[];
+  sides: PlayerId[][];
+};
+
 export type Player = {
   id: PlayerId;
   name: string;
@@ -22,6 +34,14 @@ export type SidePot = {
 export type PotState = {
   main: number;
   sides: SidePot[];
+};
+
+export type PayoutResult = {
+  dealerIndex: number;
+  pot: PotState;
+  breakdown: PotBreakdown[];
+  winners: PotWinners;
+  payouts: Record<PlayerId, number>;
 };
 
 export type ActionType =
@@ -68,6 +88,8 @@ export type HandState = {
   contribThisStreet: Record<PlayerId, number>; // ストリート投入
   totalContribThisHand: Record<PlayerId, number>; // ハンド累計投入（サイドポット計算用）
   pot: PotState;
+
+  payoutResult?: PayoutResult; // SHOWDOWN 以降の配当結果
 
   actionLog: ActionLogEntry[];
 };

@@ -1,20 +1,16 @@
-import { calcPayoutShares, distribute, type PotWinners } from '../domain/distribution';
-import type { Player, PotState } from '../domain/types';
+import { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
+import { calcPayoutShares, distribute } from '../domain/distribution';
+import { buildPotBreakdown } from '../domain/pot';
+import type { Player, PotState, PotWinners } from '../domain/types';
+import { useGameMachine } from '../state/gameMachine';
 import styles from './PayoutPage.module.css';
 
 interface PayoutPageProps {
   description: string;
 }
-
-type PayoutPlayer = {
-  id: string;
-  name: string;
-  seat: string;
-  seatIndex: number;
-  stackBefore: number;
-};
 
 type WinnerShare = {
   playerId: string;
@@ -50,16 +46,15 @@ type StackUpdate = {
   stackAfter: number;
   memo: string;
 };
-
-const players: PayoutPlayer[] = [
-  { id: 'p1', name: '佐藤', seat: 'BTN', seatIndex: 0, stackBefore: 18400 },
-  { id: 'p2', name: '鈴木', seat: 'SB', seatIndex: 1, stackBefore: 15200 },
-  { id: 'p3', name: '高橋', seat: 'BB', seatIndex: 2, stackBefore: 19200 },
-  { id: 'p4', name: '田中', seat: 'HJ', seatIndex: 3, stackBefore: 1800 },
-  { id: 'p5', name: '伊藤', seat: 'CO', seatIndex: 4, stackBefore: 7800 },
+const demoPlayers: Player[] = [
+  { id: 'p1', name: '佐藤', seatIndex: 0, stack: 22300, state: 'ACTIVE' },
+  { id: 'p2', name: '鈴木', seatIndex: 1, stack: 17300, state: 'ACTIVE' },
+  { id: 'p3', name: '高橋', seatIndex: 2, stack: 27800, state: 'ACTIVE' },
+  { id: 'p4', name: '田中', seatIndex: 3, stack: 1800, state: 'ALL_IN' },
+  { id: 'p5', name: '伊藤', seatIndex: 4, stack: 7800, state: 'ACTIVE' },
 ];
 
-const pots: PotEntry[] = [
+const demoBreakdown: PotEntry[] = [
   {
     id: 'main',
     label: 'メインポット',
@@ -86,83 +81,108 @@ const pots: PotEntry[] = [
   },
 ];
 
-const toDomainPlayers = (entries: PayoutPlayer[]): Player[] =>
-  entries.map((player) => ({
-    id: player.id,
-    name: player.name,
-    seatIndex: player.seatIndex,
-    stack: player.stackBefore,
-    state: 'ACTIVE' as const,
-  }));
-
-const dealerIndex = players.find((player) => player.seat === 'BTN')?.seatIndex ?? 0;
-
-const potState: PotState = {
-  main: pots[0]?.amount ?? 0,
-  sides: pots.slice(1).map((pot) => ({ amount: pot.amount, eligiblePlayerIds: pot.eligiblePlayerIds })),
-};
-
-const winners: PotWinners = {
-  main: pots[0]?.winnerIds ?? [],
-  sides: pots.slice(1).map((pot) => pot.winnerIds),
-};
-
-const domainPlayers = toDomainPlayers(players);
-
-const payouts = distribute(domainPlayers, dealerIndex, potState, winners);
-
-const potResults: PotResult[] = pots.map((pot) => {
-  const shares = calcPayoutShares(domainPlayers, dealerIndex, pot.amount, pot.winnerIds);
-  const winnersWithShare: WinnerShare[] = pot.winnerIds.map((playerId) => {
-    const player = players.find((p) => p.id === playerId);
-    const share = shares[playerId] ?? 0;
-    const updatedStack = (player?.stackBefore ?? 0) + (payouts[playerId] ?? 0);
-
-    return {
-      playerId,
-      name: player?.name ?? '不明なプレイヤー',
-      seat: player?.seat ?? '-',
-      share,
-      updatedStack,
-    };
-  });
-
-  return {
-    id: pot.id,
-    label: pot.label,
-    amount: pot.amount,
-    note: pot.note,
-    winners: winnersWithShare,
-  };
-});
-
-const stackUpdates: StackUpdate[] = players.map((player) => {
-  const delta = payouts[player.id] ?? 0;
-  return {
-    id: player.id,
-    name: player.name,
-    seat: player.seat,
-    stackBefore: player.stackBefore,
-    delta,
-    stackAfter: player.stackBefore + delta,
-    memo: delta > 0 ? '配当を反映しました。' : '今回の配当はありません。',
-  };
-});
-
-const highlightWinners: WinnerShare[] = stackUpdates
-  .filter((player) => player.delta > 0)
-  .sort((a, b) => b.delta - a.delta)
-  .slice(0, 3)
-  .map((player) => ({
-    playerId: player.id,
-    name: player.name,
-    seat: player.seat,
-    share: player.delta,
-    updatedStack: player.stackAfter,
-  }));
-
 export function PayoutPage({ description }: PayoutPageProps) {
-  const totalPayout = potResults.reduce((sum, pot) => sum + pot.amount, 0);
+  const navigate = useNavigate();
+  const { gameState, payoutResult, proceedToNextHand, goToShowdown } = useGameMachine();
+
+  const seatLabel = useMemo(() => {
+    const fallbackLabels = ['BTN', 'SB', 'BB', 'HJ', 'CO', 'UTG'];
+    if (!gameState) return (seatIndex: number) => fallbackLabels[seatIndex] ?? `Seat ${seatIndex + 1}`;
+    return (seatIndex: number) => {
+      if (seatIndex === gameState.hand.dealerIndex) return 'BTN';
+      if (seatIndex === gameState.hand.sbIndex) return 'SB';
+      if (seatIndex === gameState.hand.bbIndex) return 'BB';
+      return `Seat ${seatIndex + 1}`;
+    };
+  }, [gameState]);
+
+  const view = useMemo(() => {
+    const players = gameState?.players ?? demoPlayers;
+
+    const dealerIndex = payoutResult?.dealerIndex ?? gameState?.hand.dealerIndex ?? 0;
+    const potState: PotState = payoutResult?.pot ?? {
+      main: demoBreakdown[0]?.amount ?? 0,
+      sides: demoBreakdown.slice(1).map((pot) => ({ amount: pot.amount, eligiblePlayerIds: pot.eligiblePlayerIds })),
+    };
+    const winners: PotWinners = payoutResult?.winners ?? {
+      main: demoBreakdown[0]?.winnerIds ?? [],
+      sides: demoBreakdown.slice(1).map((pot) => pot.winnerIds),
+    };
+
+    const payouts = payoutResult?.payouts ?? distribute(players, dealerIndex, potState, winners);
+
+    const breakdown = payoutResult?.breakdown ?? buildPotBreakdown(players, {
+      potStateOverride: potState,
+      eligibleMainPlayerIds: players.map((p) => p.id),
+    }).breakdown;
+
+    const potResults: PotResult[] = breakdown.map((pot, index) => {
+      const winnerIds = pot.id === 'main' ? winners.main : winners.sides[index - 1] ?? [];
+      const shares = calcPayoutShares(players, dealerIndex, pot.amount, winnerIds);
+
+      const winnersWithShare: WinnerShare[] = winnerIds.map((playerId) => {
+        const player = players.find((p) => p.id === playerId);
+        const share = shares[playerId] ?? 0;
+        const updatedStack = player?.stack ?? 0;
+
+        return {
+          playerId,
+          name: player?.name ?? '不明なプレイヤー',
+          seat: player ? seatLabel(player.seatIndex) : '-',
+          share,
+          updatedStack,
+        };
+      });
+
+      const fallbackNote = payoutResult ? null : demoBreakdown.find((demo) => demo.id === pot.id)?.note;
+      return {
+        id: pot.id,
+        label: pot.label,
+        amount: pot.amount,
+        note:
+          fallbackNote ??
+          ((potState.sides[index - 1]?.eligiblePlayerIds.length ?? pot.eligiblePlayerIds.length) === 0
+            ? 'eligible が存在しません'
+            : pot.id === 'main'
+              ? `${pot.eligiblePlayerIds.length} 名が対象です。`
+              : `${pot.eligiblePlayerIds.length} 名が eligible です。`),
+        winners: winnersWithShare,
+      };
+    });
+
+    const stackUpdates: StackUpdate[] = players.map((player) => {
+      const delta = payouts[player.id] ?? 0;
+      const stackAfter = player.stack;
+      const stackBefore = stackAfter - delta;
+      return {
+        id: player.id,
+        name: player.name,
+        seat: seatLabel(player.seatIndex),
+        stackBefore,
+        delta,
+        stackAfter,
+        memo: delta > 0 ? '配当を反映しました。' : '今回の配当はありません。',
+      };
+    });
+
+    const highlightWinners: WinnerShare[] = stackUpdates
+      .filter((player) => player.delta > 0)
+      .sort((a, b) => b.delta - a.delta)
+      .slice(0, 3)
+      .map((player) => ({
+        playerId: player.id,
+        name: player.name,
+        seat: player.seat,
+        share: player.delta,
+        updatedStack: player.stackAfter,
+      }));
+
+    const totalPayout = breakdown.reduce((sum, pot) => sum + pot.amount, 0);
+
+    return { potResults, stackUpdates, highlightWinners, totalPayout };
+  }, [gameState, payoutResult, seatLabel]);
+
+  const { potResults, stackUpdates, highlightWinners, totalPayout } = view;
 
   return (
     <div className={styles.page}>
@@ -213,7 +233,7 @@ export function PayoutPage({ description }: PayoutPageProps) {
         <Card
           eyebrow="Next Step"
           title="次のハンドへの導線"
-          description="配当確定後に実行する操作を並べたダミーのアクションカードです。"
+          description="配当確定後に実行する操作をまとめています。"
         >
           <div className={styles.actionStack}>
             <div className={styles.inlineInfo}>
@@ -221,17 +241,17 @@ export function PayoutPage({ description }: PayoutPageProps) {
               <span className={styles.badge}>Undo 導線あり</span>
             </div>
             <p className={styles.actionBody}>
-              ConfirmDialog で確定 → Toast でフィードバック → テーブルへ戻る、という一連の流れをここに配線する想定です。
-              このデモではスタイルのみを固定しています。
+              配当計算を反映した後、ブラインド徴収とボタン移動を行い /table に戻ります。ショーダウンに戻る導線も
+              用意しています。
             </p>
             <div className={styles.buttonRow}>
-              <Button variant="primary" block>
-                次のハンドへ進む（ダミー）
+              <Button variant="primary" block onClick={proceedToNextHand}>
+                次のハンドへ進む
               </Button>
-              <Button variant="secondary" block>
+              <Button variant="secondary" block onClick={() => navigate('/table')}>
                 テーブルへ戻る
               </Button>
-              <Button variant="undo" block>
+              <Button variant="undo" block onClick={goToShowdown}>
                 ショーダウンに戻る
               </Button>
             </div>
