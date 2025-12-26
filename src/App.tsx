@@ -8,6 +8,7 @@ import { ConfirmDialog } from './components/ConfirmDialog';
 import { useToast } from './components/Toast';
 import { HomePage } from './pages/HomePage';
 import { LogPage } from './pages/LogPage';
+import { PreviewPage } from './pages/PreviewPage';
 import { PayoutPage } from './pages/PayoutPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { SetupPage } from './pages/SetupPage';
@@ -25,7 +26,7 @@ type PageInfo = {
   element: ReactNode;
 };
 
-const pages: PageInfo[] = [
+const basePages: PageInfo[] = [
   {
     path: '/',
     title: 'ホーム',
@@ -69,6 +70,17 @@ const pages: PageInfo[] = [
     element: <SettingsPage description="保存/復元や表示設定を扱う画面の予定地です。" />,
   },
 ];
+
+const previewPage: PageInfo = {
+  path: '/preview',
+  title: 'プレビュー',
+  description: 'GameState のダミーを切り替えて各ページの骨組みを一括で確認できます。',
+  element: (
+    <PreviewPage description="ダミー GameState を注入し、各フェーズの UI をシームレスに切り替えて確認できます。" />
+  ),
+};
+
+const pages: PageInfo[] = [...basePages, ...(import.meta.env.DEV ? [previewPage] : [])];
 
 type NavPage = PageInfo & { disabledReason?: string | null };
 
