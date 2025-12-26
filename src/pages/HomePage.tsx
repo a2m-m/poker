@@ -16,6 +16,7 @@ export function HomePage({ description }: HomePageProps) {
   const [activeDialog, setActiveDialog] = useState<'resume' | 'reset' | null>(null);
   const { gameState, clearGameState, hasCorruptedSave } = useGameState();
   const resumeAvailability = useMemo(() => getResumeAvailability(gameState), [gameState]);
+  const isDev = import.meta.env.DEV;
 
   const handleNewGame = () => {
     navigate('/setup');
@@ -171,6 +172,14 @@ export function HomePage({ description }: HomePageProps) {
               <span className={styles.pageDescription}>保存/復元やリセット操作の入口</span>
             </NavLink>
           </li>
+          {isDev && (
+            <li>
+              <NavLink to="/preview" className={styles.pageLink}>
+                <span className={styles.pageTitle}>プレビュー</span>
+                <span className={styles.pageDescription}>ダミー状態を切り替えて各ページを確認</span>
+              </NavLink>
+            </li>
+          )}
         </ul>
         <p className={styles.note}>
           いずれも UI 骨組みのみのプレースホルダーです。ルーティングと導線のトーンを先に整え、後続タスクで中身を差し込みます。
