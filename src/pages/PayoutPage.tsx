@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { calcPayoutShares, distribute } from '../domain/distribution';
@@ -82,8 +81,7 @@ const demoBreakdown: PotEntry[] = [
 ];
 
 export function PayoutPage({ description }: PayoutPageProps) {
-  const navigate = useNavigate();
-  const { gameState, payoutResult, proceedToNextHand, goToShowdown } = useGameMachine();
+  const { gameState, payoutResult, proceedToNextHand, returnToShowdownPhase, currentPhase } = useGameMachine();
 
   const seatLabel = useMemo(() => {
     const fallbackLabels = ['BTN', 'SB', 'BB', 'HJ', 'CO', 'UTG'];
@@ -245,14 +243,32 @@ export function PayoutPage({ description }: PayoutPageProps) {
               用意しています。
             </p>
             <div className={styles.buttonRow}>
-              <Button variant="primary" block onClick={proceedToNextHand}>
-                次のハンドへ進む
+              <Button
+                variant="secondary"
+                block
+                onClick={() => {
+                  if (!gameState) {
+                    window.location.hash = '#/showdown';
+                    return;
+                  }
+                  returnToShowdownPhase();
+                }}
+              >
+                戻る
               </Button>
-              <Button variant="secondary" block onClick={() => navigate('/table')}>
-                テーブルへ戻る
-              </Button>
-              <Button variant="undo" block onClick={goToShowdown}>
-                ショーダウンに戻る
+              <Button
+                variant="primary"
+                block
+                onClick={() => {
+                  if (!gameState) {
+                    window.location.hash = '#/table';
+                    return;
+                  }
+                  proceedToNextHand();
+                }}
+                disabled={currentPhase !== 'PAYOUT'}
+              >
+                次へ
               </Button>
             </div>
             <p className={styles.hint}>配当結果の確認後にステータスバーやプレイヤー表示を更新する導線を置きます。</p>

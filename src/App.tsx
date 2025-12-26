@@ -15,6 +15,7 @@ import { ShowdownPage } from './pages/ShowdownPage';
 import { TablePage } from './pages/TablePage';
 import { useGameState } from './state/GameStateContext';
 import { getResumeAvailability } from './state/selectors';
+import { usePhaseNavigation } from './state/usePhaseNavigation';
 import viteLogo from '/vite.svg';
 
 type PageInfo = {
@@ -134,10 +135,11 @@ const GuardedTablePage = ({ element }: { element: ReactNode }) => {
   return <>{element}</>;
 };
 
-function App() {
+const AppContent = () => {
   const { pushToast } = useToast();
   const [isDialogOpen, setDialogOpen] = useState(false);
   const { hasCorruptedSave } = useGameState();
+  usePhaseNavigation();
 
   useEffect(() => {
     if (!hasCorruptedSave) return;
@@ -187,7 +189,6 @@ function App() {
   };
 
   return (
-    <HashRouter>
       <div className="app">
         <header className="app__header">
           <div className="app__logos">
@@ -305,6 +306,13 @@ function App() {
           onCancel={handleDialogCancel}
         />
       </div>
+  );
+};
+
+function App() {
+  return (
+    <HashRouter>
+      <AppContent />
     </HashRouter>
   );
 }
