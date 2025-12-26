@@ -2,6 +2,8 @@
   display: flex;
   flex-direction: column;
   gap: var(--grid-gap);
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .header {
@@ -12,7 +14,7 @@
 
 .eyebrow {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: clamp(0.8rem, 1.6vw, 0.95rem);
   color: var(--text-muted);
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -20,18 +22,19 @@
 
 .title {
   margin: 0;
-  font-size: 1.8rem;
+  font-size: clamp(1.6rem, 3vw, 2.1rem);
 }
 
 .lead {
   margin: 0;
   color: var(--text-secondary);
+  font-size: clamp(1rem, 2vw, 1.1rem);
 }
 
 .note {
   margin: 0;
   color: var(--text-secondary);
-  font-size: 0.95rem;
+  font-size: clamp(0.92rem, 1.6vw, 1rem);
 }
 
 .heroGrid {
@@ -71,18 +74,19 @@
 .totalLabel {
   margin: 0;
   color: var(--text-secondary);
-  font-size: 0.95rem;
+  font-size: clamp(0.92rem, 1.6vw, 1rem);
 }
 
 .totalValue {
   margin: 0;
-  font-size: 1.9rem;
+  font-size: clamp(1.6rem, 3.2vw, 2.2rem);
   font-weight: 800;
 }
 
 .totalMeta {
   margin: 0;
   color: var(--text-secondary);
+  font-size: clamp(0.95rem, 1.8vw, 1.05rem);
 }
 
 .totalTags {
@@ -130,6 +134,7 @@
 .highlightName {
   margin: 0;
   font-weight: 700;
+  font-size: clamp(1rem, 2.4vw, 1.1rem);
 }
 
 .highlightSeat {
@@ -140,18 +145,19 @@
   border-radius: 999px;
   background: var(--surface-weak-hover);
   border: 1px solid var(--border-normal);
-  font-size: 0.85rem;
+  font-size: clamp(0.85rem, 1.8vw, 0.95rem);
 }
 
 .highlightShare {
   margin: 0;
-  font-size: 1.2rem;
+  font-size: clamp(1.1rem, 2.8vw, 1.35rem);
   font-weight: 800;
 }
 
 .highlightStack {
   margin: 0;
   color: var(--text-secondary);
+  font-size: clamp(0.95rem, 1.6vw, 1.05rem);
 }
 
 .actionStack {
@@ -169,12 +175,19 @@
 .actionBody {
   margin: 0;
   color: var(--text-secondary);
+  font-size: clamp(0.95rem, 1.6vw, 1.05rem);
 }
 
 .buttonRow {
   display: grid;
   gap: 0.5rem;
   grid-template-columns: 1fr;
+}
+
+.buttonRow :global(button) {
+  font-size: clamp(0.95rem, 2vw, 1.05rem);
+  padding: clamp(0.7rem, 1.8vh, 0.9rem) clamp(0.9rem, 3vw, 1.2rem);
+  border-radius: clamp(10px, 2vw, 14px);
 }
 
 .hint {
@@ -228,7 +241,7 @@
 .potNote {
   margin: 0;
   color: var(--text-secondary);
-  font-size: 0.95rem;
+  font-size: clamp(0.92rem, 1.6vw, 1rem);
 }
 
 .winnerList {
@@ -261,7 +274,7 @@
 .winnerSeat {
   margin: 0;
   color: var(--text-secondary);
-  font-size: 0.95rem;
+  font-size: clamp(0.92rem, 1.6vw, 1rem);
 }
 
 .winnerShare,
@@ -272,7 +285,7 @@
 
 .winnerStack {
   color: var(--text-secondary);
-  font-size: 0.95rem;
+  font-size: clamp(0.92rem, 1.6vw, 1rem);
 }
 
 .stackList {
@@ -302,10 +315,11 @@
 .stackName {
   margin: 0;
   font-weight: 700;
+  font-size: clamp(1rem, 2.4vw, 1.1rem);
 }
 
 .stackSeat {
-  font-size: 0.95rem;
+  font-size: clamp(0.92rem, 1.6vw, 1rem);
   color: var(--text-secondary);
   margin-left: 0.35rem;
 }
@@ -313,6 +327,7 @@
 .stackMemo {
   margin: 0.2rem 0 0;
   color: var(--text-secondary);
+  font-size: clamp(0.92rem, 1.6vw, 1rem);
 }
 
 .stackNumbers {
@@ -326,7 +341,7 @@
 .stackBefore,
 .stackAfter {
   color: var(--text-secondary);
-  font-size: 0.95rem;
+  font-size: clamp(0.92rem, 1.6vw, 1rem);
 }
 
 .stackDelta {
