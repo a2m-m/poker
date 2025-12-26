@@ -1,9 +1,4 @@
-import type { Player, PlayerId, PotState } from './types';
-
-export type PotWinners = {
-  main: PlayerId[];
-  sides: PlayerId[][];
-};
+import type { Player, PlayerId, PotState, PotWinners } from './types';
 
 const sortByButtonProximity = (players: Player[], dealerIndex: number, winnerIds: PlayerId[]) => {
   const seatMap = new Map(players.map((player) => [player.id, player.seatIndex]));

@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
+import { buildPotBreakdown, buildPotWinnersFromSelection } from '../domain/pot';
+import type { Player, PotBreakdown, PotState } from '../domain/types';
 import { useGameState } from '../state/GameStateContext';
+import { useGameMachine } from '../state/gameMachine';
 import styles from './ShowdownPage.module.css';
 
 interface ShowdownPageProps {
@@ -15,68 +19,63 @@ type PlayerOption = {
   stack: number;
 };
 
-type PotEntry = {
-  id: string;
-  label: string;
-  amount: number;
-  note: string;
-  eligiblePlayerIds: string[];
-  defaultWinners: string[];
+type PotEntry = PotBreakdown & { note: string };
+
+const demoPlayers: Player[] = [
+  { id: 'p1', name: '佐藤', seatIndex: 0, stack: 18400, state: 'ACTIVE' },
+  { id: 'p2', name: '鈴木', seatIndex: 1, stack: 15200, state: 'ACTIVE' },
+  { id: 'p3', name: '高橋', seatIndex: 2, stack: 19200, state: 'ACTIVE' },
+  { id: 'p4', name: '田中', seatIndex: 3, stack: 0, state: 'ALL_IN' },
+  { id: 'p5', name: '伊藤', seatIndex: 4, stack: 7800, state: 'ACTIVE' },
+];
+
+const demoPotState: PotState = {
+  main: 8600,
+  sides: [
+    { amount: 4200, eligiblePlayerIds: ['p1', 'p2', 'p3', 'p4'] },
+    { amount: 1800, eligiblePlayerIds: ['p1', 'p2', 'p3'] },
+  ],
 };
 
-const demoPlayers: PlayerOption[] = [
-  { id: 'p1', name: '佐藤', seat: 'BTN', stack: 18400 },
-  { id: 'p2', name: '鈴木', seat: 'SB', stack: 15200 },
-  { id: 'p3', name: '高橋', seat: 'BB', stack: 19200 },
-  { id: 'p4', name: '田中', seat: 'HJ', stack: 0 },
-  { id: 'p5', name: '伊藤', seat: 'CO', stack: 7800 },
-];
-
-const demoPotEntries: PotEntry[] = [
-  {
-    id: 'main',
-    label: 'メインポット',
-    amount: 8600,
-    note: 'リバーまで残った 5 名が対象です。勝者が複数の場合は同点配分します。',
-    eligiblePlayerIds: ['p1', 'p2', 'p3', 'p4', 'p5'],
-    defaultWinners: ['p3'],
-  },
-  {
-    id: 'side1',
-    label: 'サイドポット1',
-    amount: 4200,
-    note: '伊藤がターンでオールインしたため 4 名で争います。',
-    eligiblePlayerIds: ['p1', 'p2', 'p3', 'p4'],
-    defaultWinners: ['p1', 'p2'],
-  },
-  {
-    id: 'side2',
-    label: 'サイドポット2',
-    amount: 1800,
-    note: '田中のオールインで作成。ブラインド 2 名とボタンの対決です。',
-    eligiblePlayerIds: ['p1', 'p2', 'p3'],
-    defaultWinners: ['p1'],
-  },
-];
+const demoSeatLabels: Record<string, string> = {
+  p1: 'BTN',
+  p2: 'SB',
+  p3: 'BB',
+  p4: 'HJ',
+  p5: 'CO',
+};
 
 const boardCards = ['A♠', 'K♦', '7♣', '5♥', '2♠'];
 
+const buildSeatLabel = (handDealer: number, handSb: number, handBb: number) => (seatIndex: number) => {
+  if (seatIndex === handDealer) return 'BTN';
+  if (seatIndex === handSb) return 'SB';
+  if (seatIndex === handBb) return 'BB';
+  return `Seat ${seatIndex + 1}`;
+};
+
+const attachNotes = (pots: PotBreakdown[]): PotEntry[] =>
+  pots.map((pot) => ({
+    ...pot,
+    note: pot.id === 'main'
+      ? `${pot.eligiblePlayerIds.length} 名がショーダウンに参加しています。`
+      : `eligible ${pot.eligiblePlayerIds.length} 名で争われます。`,
+  }));
+
 export function ShowdownPage({ description }: ShowdownPageProps) {
+  const navigate = useNavigate();
   const { gameState } = useGameState();
+  const { settleShowdown } = useGameMachine();
+
+  const seatLabel = useMemo(() => {
+    if (!gameState) return (seatIndex: number) => demoSeatLabels[demoPlayers[seatIndex]?.id] ?? `Seat ${seatIndex + 1}`;
+    return buildSeatLabel(gameState.hand.dealerIndex, gameState.hand.sbIndex, gameState.hand.bbIndex);
+  }, [gameState]);
 
   const players = useMemo<PlayerOption[]>(() => {
-    if (!gameState) return demoPlayers;
+    const source: Player[] = gameState?.players ?? demoPlayers;
 
-    const { players: statePlayers, hand } = gameState;
-
-    const seatLabel = (seatIndex: number) => {
-      if (seatIndex === hand.dealerIndex) return 'BTN';
-      if (seatIndex === hand.sbIndex) return 'SB';
-      if (seatIndex === hand.bbIndex) return 'BB';
-      return `Seat ${seatIndex + 1}`;
-    };
-
-    return statePlayers
+    return source
       .slice()
       .sort((a, b) => a.seatIndex - b.seatIndex)
       .map((player) => ({
@@ -85,40 +84,25 @@ export function ShowdownPage({ description }: ShowdownPageProps) {
         seat: seatLabel(player.seatIndex),
         stack: player.stack,
       }));
-  }, [gameState]);
+  }, [gameState, seatLabel]);
 
   const potEntries = useMemo<PotEntry[]>(() => {
-    if (!gameState) return demoPotEntries;
+    const sourcePlayers = gameState?.players ?? demoPlayers;
+    const { breakdown } = buildPotBreakdown(sourcePlayers, {
+      hand: gameState?.hand,
+      potStateOverride: gameState ? undefined : demoPotState,
+      eligibleMainPlayerIds: gameState ? undefined : demoPlayers.map((p) => p.id),
+    });
 
-    const activePlayerIds = gameState.players.filter((player) => player.state !== 'FOLDED').map((p) => p.id);
-    const entries: PotEntry[] = [
-      {
-        id: 'main',
-        label: 'メインポット',
-        amount: gameState.hand.pot.main,
-        note: 'フォールドしていないプレイヤー全員が対象です。',
-        eligiblePlayerIds: activePlayerIds,
-        defaultWinners: activePlayerIds.slice(0, 1),
-      },
-      ...gameState.hand.pot.sides.map((side, index) => ({
-        id: `side${index + 1}`,
-        label: `サイドポット${index + 1}`,
-        amount: side.amount,
-        note: `eligible ${side.eligiblePlayerIds.length} 名で争われます。`,
-        eligiblePlayerIds: side.eligiblePlayerIds,
-        defaultWinners: side.eligiblePlayerIds.slice(0, 1),
-      })),
-    ];
-
-    return entries.filter((entry) => entry.eligiblePlayerIds.length > 0);
+    return attachNotes(breakdown);
   }, [gameState]);
 
   const [selectedWinners, setSelectedWinners] = useState<Record<string, string[]>>(() =>
-    Object.fromEntries(potEntries.map((pot) => [pot.id, pot.defaultWinners])),
+    Object.fromEntries(potEntries.map((pot) => [pot.id, pot.eligiblePlayerIds.slice(0, 1)])),
   );
 
   useEffect(() => {
-    setSelectedWinners(Object.fromEntries(potEntries.map((pot) => [pot.id, pot.defaultWinners])));
+    setSelectedWinners(Object.fromEntries(potEntries.map((pot) => [pot.id, pot.eligiblePlayerIds.slice(0, 1)])));
   }, [potEntries]);
 
   const toggleWinner = (potId: string, playerId: string, eligible: boolean) => {
@@ -130,6 +114,19 @@ export function ShowdownPage({ description }: ShowdownPageProps) {
       const nextList = exists ? current.filter((id) => id !== playerId) : [...current, playerId];
       return { ...prev, [potId]: nextList };
     });
+  };
+
+  const handleConfirm = () => {
+    const winners = buildPotWinnersFromSelection(potEntries, selectedWinners);
+    if (!gameState) {
+      navigate('/payout');
+      return;
+    }
+    settleShowdown(winners);
+  };
+
+  const resetSelection = () => {
+    setSelectedWinners(Object.fromEntries(potEntries.map((pot) => [pot.id, pot.eligiblePlayerIds.slice(0, 1)])));
   };
 
   return (
@@ -179,8 +176,8 @@ export function ShowdownPage({ description }: ShowdownPageProps) {
 
         <Card
           eyebrow="Winners"
-          title="配当確定のダミー導線"
-          description="選択後に確認 → 配当結果へ進む流れを示すだけのダミー UI です。"
+          title="配当確定の導線"
+          description="選択後に確認 → 配当結果へ進む流れを示します。eligible のみ選択可能です。"
         >
           <div className={styles.actionStack}>
             <div className={styles.inlineInfo}>
@@ -189,20 +186,20 @@ export function ShowdownPage({ description }: ShowdownPageProps) {
             </div>
             <p className={styles.actionBody}>
               下のポットカードで勝者候補をチェックすると、同点配分や対象外プレイヤーの扱いを確認できます。
-              実処理はまだありませんが、ConfirmDialog と Toast でフィードバックする想定です。
+              ConfirmDialog での確認を想定しつつ、このデモでは直接 /payout に遷移します。
             </p>
             <div className={styles.buttonRow}>
-              <Button variant="primary" block>
-                配当を確定する（デモ）
+              <Button variant="primary" block onClick={handleConfirm}>
+                配当を確定して結果へ進む
               </Button>
-              <Button variant="secondary" block>
+              <Button variant="secondary" block onClick={() => navigate('/table')}>
                 テーブルへ戻る
               </Button>
-              <Button variant="danger" block>
-                選択をリセット（未実装）
+              <Button variant="danger" block onClick={resetSelection}>
+                選択をリセット
               </Button>
             </div>
-            <p className={styles.hint}>/payout へ進む導線をここに配置予定です。</p>
+            <p className={styles.hint}>選択内容はポット別に保持され、eligible 外はチェック不可です。</p>
           </div>
         </Card>
       </div>
@@ -224,9 +221,7 @@ export function ShowdownPage({ description }: ShowdownPageProps) {
                 </div>
                 <div className={styles.potBadges}>
                   <span className={styles.badge}>eligible {pot.eligiblePlayerIds.length} 名</span>
-                  <span className={styles.badge}>
-                    {pot.defaultWinners.length > 1 ? '同点配分例あり' : '単独勝者例'}
-                  </span>
+                  <span className={styles.badge}>勝者を複数選択可</span>
                 </div>
               </div>
               <p className={styles.potNote}>{pot.note}</p>
