@@ -57,9 +57,11 @@ export function PayoutPage({ description }: PayoutPageProps) {
     navigate('/table');
   }, [gameState, payoutResult, goToPreviousPhase, navigate, previousPhaseAvailability]);
 
-  if (!gameState || !payoutResult) return null;
-
   const seatLabel = useMemo(() => {
+    if (!gameState) {
+      return (seatIndex: number) => `Seat ${seatIndex + 1}`;
+    }
+
     return (seatIndex: number) => {
       if (seatIndex === gameState.hand.dealerIndex) return 'BTN';
       if (seatIndex === gameState.hand.sbIndex) return 'SB';
@@ -69,6 +71,8 @@ export function PayoutPage({ description }: PayoutPageProps) {
   }, [gameState]);
 
   const view = useMemo(() => {
+    if (!gameState || !payoutResult) return null;
+
     const players = gameState.players;
     const dealerIndex = payoutResult.dealerIndex;
     const potState = payoutResult.pot;
@@ -150,6 +154,8 @@ export function PayoutPage({ description }: PayoutPageProps) {
 
     return { potResults, stackUpdates, highlightWinners, totalPayout, sidePotCount, totalWinners };
   }, [gameState, payoutResult, seatLabel]);
+
+  if (!view) return null;
 
   const { potResults, stackUpdates, highlightWinners, totalPayout, sidePotCount, totalWinners } = view;
   const previousPhaseLabel =
