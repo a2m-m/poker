@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '../components/Toast';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { PageShortcutBar } from '../components/PageShortcutBar';
 import { buildPotBreakdown, buildPotWinnersFromSelection } from '../domain/pot';
-import type { Player, PotBreakdown, PotState } from '../domain/types';
+import type { PotBreakdown } from '../domain/types';
 import { useGameState } from '../state/GameStateContext';
 import { useGameMachine } from '../state/gameMachine';
 import styles from './ShowdownPage.module.css';
@@ -21,30 +22,6 @@ type PlayerOption = {
 };
 
 type PotEntry = PotBreakdown & { note: string };
-
-const demoPlayers: Player[] = [
-  { id: 'p1', name: '佐藤', seatIndex: 0, stack: 18400, state: 'ACTIVE' },
-  { id: 'p2', name: '鈴木', seatIndex: 1, stack: 15200, state: 'ACTIVE' },
-  { id: 'p3', name: '高橋', seatIndex: 2, stack: 19200, state: 'ACTIVE' },
-  { id: 'p4', name: '田中', seatIndex: 3, stack: 0, state: 'ALL_IN' },
-  { id: 'p5', name: '伊藤', seatIndex: 4, stack: 7800, state: 'ACTIVE' },
-];
-
-const demoPotState: PotState = {
-  main: 8600,
-  sides: [
-    { amount: 4200, eligiblePlayerIds: ['p1', 'p2', 'p3', 'p4'] },
-    { amount: 1800, eligiblePlayerIds: ['p1', 'p2', 'p3'] },
-  ],
-};
-
-const demoSeatLabels: Record<string, string> = {
-  p1: 'BTN',
-  p2: 'SB',
-  p3: 'BB',
-  p4: 'HJ',
-  p5: 'CO',
-};
 
 const boardCards = ['A♠', 'K♦', '7♣', '5♥', '2♠'];
 
@@ -66,17 +43,30 @@ const attachNotes = (pots: PotBreakdown[]): PotEntry[] =>
 export function ShowdownPage({ description }: ShowdownPageProps) {
   const navigate = useNavigate();
   const { gameState, clearGameState } = useGameState();
+  const { pushToast } = useToast();
   const { settleShowdown, currentPhase, previousPhaseAvailability, goToPreviousPhase } = useGameMachine();
 
+  useEffect(() => {
+    if (gameState) return;
+
+    pushToast({
+      title: 'ショーダウンに進めません',
+      description: 'ゲーム状態が存在しないためテーブルへ戻ります。',
+      variant: 'warning',
+    });
+    navigate('/table', { replace: true });
+  }, [gameState, navigate, pushToast]);
+
   const seatLabel = useMemo(() => {
-    if (!gameState) return (seatIndex: number) => demoSeatLabels[demoPlayers[seatIndex]?.id] ?? `Seat ${seatIndex + 1}`;
+    if (!gameState) return () => 'Seat';
+
     return buildSeatLabel(gameState.hand.dealerIndex, gameState.hand.sbIndex, gameState.hand.bbIndex);
   }, [gameState]);
 
   const players = useMemo<PlayerOption[]>(() => {
-    const source: Player[] = gameState?.players ?? demoPlayers;
+    if (!gameState) return [];
 
-    return source
+    return gameState.players
       .slice()
       .sort((a, b) => a.seatIndex - b.seatIndex)
       .map((player) => ({
@@ -88,23 +78,25 @@ export function ShowdownPage({ description }: ShowdownPageProps) {
   }, [gameState, seatLabel]);
 
   const potEntries = useMemo<PotEntry[]>(() => {
-    const sourcePlayers = gameState?.players ?? demoPlayers;
-    const { breakdown } = buildPotBreakdown(sourcePlayers, {
-      hand: gameState?.hand,
-      potStateOverride: gameState ? undefined : demoPotState,
-      eligibleMainPlayerIds: gameState ? undefined : demoPlayers.map((p) => p.id),
+    if (!gameState) return [];
+
+    const { breakdown } = buildPotBreakdown(gameState.players, {
+      hand: gameState.hand,
     });
 
     return attachNotes(breakdown);
   }, [gameState]);
 
-  const [selectedWinners, setSelectedWinners] = useState<Record<string, string[]>>(() =>
-    Object.fromEntries(potEntries.map((pot) => [pot.id, pot.eligiblePlayerIds.slice(0, 1)])),
+  const defaultWinnerSelection = useMemo(
+    () => Object.fromEntries(potEntries.map((pot) => [pot.id, pot.eligiblePlayerIds.slice(0, 1)])),
+    [potEntries],
   );
 
+  const [selectedWinners, setSelectedWinners] = useState<Record<string, string[]>>(defaultWinnerSelection);
+
   useEffect(() => {
-    setSelectedWinners(Object.fromEntries(potEntries.map((pot) => [pot.id, pot.eligiblePlayerIds.slice(0, 1)])));
-  }, [potEntries]);
+    setSelectedWinners(defaultWinnerSelection);
+  }, [defaultWinnerSelection]);
 
   const toggleWinner = (potId: string, playerId: string, eligible: boolean) => {
     if (!eligible) return;
@@ -118,11 +110,9 @@ export function ShowdownPage({ description }: ShowdownPageProps) {
   };
 
   const handleConfirm = () => {
+    if (!gameState) return;
+
     const winners = buildPotWinnersFromSelection(potEntries, selectedWinners);
-    if (!gameState) {
-      window.location.hash = '#/payout';
-      return;
-    }
     settleShowdown(winners);
   };
 
@@ -137,6 +127,10 @@ export function ShowdownPage({ description }: ShowdownPageProps) {
     clearGameState();
     navigate('/setup');
   };
+
+  if (!gameState) {
+    return null;
+  }
 
   return (
     <div className={styles.page}>
@@ -230,10 +224,6 @@ export function ShowdownPage({ description }: ShowdownPageProps) {
                 block
                 onClick={() => {
                   if (!previousPhaseAvailability.canReturn) return;
-                  if (!gameState) {
-                    window.location.hash = '#/table';
-                    return;
-                  }
                   goToPreviousPhase();
                 }}
                 disabled={!previousPhaseAvailability.canReturn}
