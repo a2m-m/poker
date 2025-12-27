@@ -5,7 +5,7 @@ import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { PageShortcutBar } from '../components/PageShortcutBar';
 import { buildPotBreakdown, buildPotWinnersFromSelection } from '../domain/pot';
-import type { Player, PotBreakdown } from '../domain/types';
+import type { PotBreakdown } from '../domain/types';
 import { useGameState } from '../state/GameStateContext';
 import { useGameMachine } from '../state/gameMachine';
 import styles from './ShowdownPage.module.css';
@@ -57,15 +57,15 @@ export function ShowdownPage({ description }: ShowdownPageProps) {
     navigate('/table', { replace: true });
   }, [gameState, navigate, pushToast]);
 
-  if (!gameState) {
-    return null;
-  }
-
   const seatLabel = useMemo(() => {
+    if (!gameState) return () => 'Seat';
+
     return buildSeatLabel(gameState.hand.dealerIndex, gameState.hand.sbIndex, gameState.hand.bbIndex);
   }, [gameState]);
 
   const players = useMemo<PlayerOption[]>(() => {
+    if (!gameState) return [];
+
     return gameState.players
       .slice()
       .sort((a, b) => a.seatIndex - b.seatIndex)
@@ -75,23 +75,28 @@ export function ShowdownPage({ description }: ShowdownPageProps) {
         seat: seatLabel(player.seatIndex),
         stack: player.stack,
       }));
-  }, [gameState.players, seatLabel]);
+  }, [gameState, seatLabel]);
 
   const potEntries = useMemo<PotEntry[]>(() => {
+    if (!gameState) return [];
+
     const { breakdown } = buildPotBreakdown(gameState.players, {
       hand: gameState.hand,
     });
 
     return attachNotes(breakdown);
-  }, [gameState.hand, gameState.players]);
+  }, [gameState]);
 
-  const [selectedWinners, setSelectedWinners] = useState<Record<string, string[]>>(() =>
-    Object.fromEntries(potEntries.map((pot) => [pot.id, pot.eligiblePlayerIds.slice(0, 1)])),
+  const defaultWinnerSelection = useMemo(
+    () => Object.fromEntries(potEntries.map((pot) => [pot.id, pot.eligiblePlayerIds.slice(0, 1)])),
+    [potEntries],
   );
 
+  const [selectedWinners, setSelectedWinners] = useState<Record<string, string[]>>(defaultWinnerSelection);
+
   useEffect(() => {
-    setSelectedWinners(Object.fromEntries(potEntries.map((pot) => [pot.id, pot.eligiblePlayerIds.slice(0, 1)])));
-  }, [potEntries]);
+    setSelectedWinners(defaultWinnerSelection);
+  }, [defaultWinnerSelection]);
 
   const toggleWinner = (potId: string, playerId: string, eligible: boolean) => {
     if (!eligible) return;
@@ -105,6 +110,8 @@ export function ShowdownPage({ description }: ShowdownPageProps) {
   };
 
   const handleConfirm = () => {
+    if (!gameState) return;
+
     const winners = buildPotWinnersFromSelection(potEntries, selectedWinners);
     settleShowdown(winners);
   };
@@ -120,6 +127,10 @@ export function ShowdownPage({ description }: ShowdownPageProps) {
     clearGameState();
     navigate('/setup');
   };
+
+  if (!gameState) {
+    return null;
+  }
 
   return (
     <div className={styles.page}>

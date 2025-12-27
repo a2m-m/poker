@@ -174,7 +174,6 @@ export function TablePage({ description }: TablePageProps) {
       try {
         return applyPlayerActionToState(prev, actionInput);
       } catch (error) {
-        // eslint-disable-next-line no-console
         console.error(error);
         pushToast({
           title: 'アクションの適用に失敗しました',
