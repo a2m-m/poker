@@ -1,9 +1,12 @@
 import { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
+import { PageShortcutBar } from '../components/PageShortcutBar';
 import { calcPayoutShares, distribute } from '../domain/distribution';
 import { buildPotBreakdown } from '../domain/pot';
 import type { Player, PotState, PotWinners } from '../domain/types';
+import { useGameState } from '../state/GameStateContext';
 import { useGameMachine } from '../state/gameMachine';
 import styles from './PayoutPage.module.css';
 
@@ -81,7 +84,10 @@ const demoBreakdown: PotEntry[] = [
 ];
 
 export function PayoutPage({ description }: PayoutPageProps) {
-  const { gameState, payoutResult, proceedToNextHand, returnToShowdownPhase, currentPhase } = useGameMachine();
+  const navigate = useNavigate();
+  const { clearGameState } = useGameState();
+  const { gameState, payoutResult, proceedToNextHand, currentPhase, previousPhaseAvailability, goToPreviousPhase } =
+    useGameMachine();
 
   const seatLabel = useMemo(() => {
     const fallbackLabels = ['BTN', 'SB', 'BB', 'HJ', 'CO', 'UTG'];
@@ -181,6 +187,13 @@ export function PayoutPage({ description }: PayoutPageProps) {
   }, [gameState, payoutResult, seatLabel]);
 
   const { potResults, stackUpdates, highlightWinners, totalPayout } = view;
+  const previousPhaseLabel =
+    previousPhaseAvailability.targetPath === '/showdown' ? '/showdown に戻ります' : '/table に戻ります';
+
+  const handleDiscardHand = () => {
+    clearGameState();
+    navigate('/setup');
+  };
 
   return (
     <div className={styles.page}>
@@ -195,6 +208,33 @@ export function PayoutPage({ description }: PayoutPageProps) {
           ポットの内訳と、次のハンドへ進むための導線を並べています。
         </p>
       </header>
+
+      <PageShortcutBar
+        actions={[
+          {
+            label: 'ホームへ戻る',
+            description: 'ホームに戻ってアプリの導線を確認します。',
+            onClick: () => navigate('/'),
+            variant: 'secondary',
+          },
+          {
+            label: 'このハンドを破棄',
+            description: '配当結果を破棄し、セットアップに戻ります。',
+            onClick: handleDiscardHand,
+            variant: 'danger',
+          },
+          {
+            label: '前フェーズへ戻る',
+            description: previousPhaseAvailability.canReturn
+              ? `${previousPhaseLabel}（状態マシンの許可が必要です）`
+              : 'ショーダウンに戻れない状態です。',
+            onClick: goToPreviousPhase,
+            variant: 'undo',
+            disabled: !previousPhaseAvailability.canReturn,
+            disabledReason: previousPhaseAvailability.reason,
+          },
+        ]}
+      />
 
       <div className={styles.heroGrid}>
         <Card
@@ -247,14 +287,21 @@ export function PayoutPage({ description }: PayoutPageProps) {
                 variant="secondary"
                 block
                 onClick={() => {
+                  if (!previousPhaseAvailability.canReturn) return;
                   if (!gameState) {
                     window.location.hash = '#/showdown';
                     return;
                   }
-                  returnToShowdownPhase();
+                  goToPreviousPhase();
                 }}
+                disabled={!previousPhaseAvailability.canReturn}
+                title={
+                  previousPhaseAvailability.canReturn
+                    ? previousPhaseLabel
+                    : previousPhaseAvailability.reason ?? '前フェーズに戻れません'
+                }
               >
-                戻る
+                前フェーズへ戻る
               </Button>
               <Button
                 variant="primary"
@@ -271,6 +318,9 @@ export function PayoutPage({ description }: PayoutPageProps) {
                 次へ
               </Button>
             </div>
+            {!previousPhaseAvailability.canReturn && previousPhaseAvailability.reason && (
+              <p className={styles.hint}>{previousPhaseAvailability.reason}</p>
+            )}
             <p className={styles.hint}>配当結果の確認後にステータスバーやプレイヤー表示を更新する導線を置きます。</p>
           </div>
         </Card>

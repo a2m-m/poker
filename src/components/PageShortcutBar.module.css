@@ -1,0 +1,29 @@
+.bar {
+  margin: 0 0 1.2rem;
+  padding: 0.9rem 1rem;
+  border-radius: 0.9rem;
+  background: var(--surface-weak);
+  border: 1px solid var(--border-normal);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 1rem;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.hint {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+@media (max-width: 720px) {
+  .bar {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+}

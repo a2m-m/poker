@@ -4,7 +4,52 @@ import { startNextHand } from '../domain/game';
 import { buildPotBreakdown } from '../domain/pot';
 import type { GameState, PotWinners } from '../domain/types';
 import { useGameState } from './GameStateContext';
-import { selectGamePhase } from './selectors';
+import { selectGamePhase, type GamePhase } from './selectors';
+
+type PreviousPhaseAvailability = {
+  canReturn: boolean;
+  reason: string | null;
+  targetPhase: GamePhase | null;
+  targetPath: '/table' | '/showdown';
+};
+
+const describePreviousPhaseAvailability = (gameState: GameState | null): PreviousPhaseAvailability => {
+  const phase = selectGamePhase(gameState);
+
+  if (!gameState || !phase) {
+    return {
+      canReturn: false,
+      reason: 'ゲーム状態が存在しないため戻れません。',
+      targetPhase: null,
+      targetPath: '/table',
+    };
+  }
+
+  if (phase === 'TABLE') {
+    return {
+      canReturn: false,
+      reason: 'テーブル進行中は前フェーズがありません。',
+      targetPhase: 'TABLE',
+      targetPath: '/table',
+    };
+  }
+
+  if (phase === 'SHOWDOWN') {
+    return {
+      canReturn: true,
+      reason: null,
+      targetPhase: 'TABLE',
+      targetPath: '/table',
+    };
+  }
+
+  return {
+    canReturn: true,
+    reason: null,
+    targetPhase: 'SHOWDOWN',
+    targetPath: '/showdown',
+  } satisfies PreviousPhaseAvailability;
+};
 
 const buildPayoutResult = (game: GameState, winners: PotWinners) => {
   const { players, hand } = game;
@@ -38,6 +83,10 @@ const buildPayoutResult = (game: GameState, winners: PotWinners) => {
 export const useGameMachine = () => {
   const { gameState, updateGameState } = useGameState();
   const currentPhase = selectGamePhase(gameState);
+  const previousPhaseAvailability = useMemo(
+    () => describePreviousPhaseAvailability(gameState),
+    [gameState],
+  );
 
   const payoutResult = useMemo(() => gameState?.hand.payoutResult ?? null, [gameState]);
 
@@ -102,6 +151,32 @@ export const useGameMachine = () => {
     });
   }, [updateGameState]);
 
+  const goToPreviousPhase = useCallback(() => {
+    updateGameState((prev) => {
+      const availability = describePreviousPhaseAvailability(prev);
+
+      if (!prev || !availability.canReturn || !availability.targetPhase) return prev;
+
+      if (availability.targetPhase === 'TABLE') {
+        return {
+          ...prev,
+          hand: {
+            ...prev.hand,
+            street: 'RIVER',
+          },
+        } satisfies GameState;
+      }
+
+      return {
+        ...prev,
+        hand: {
+          ...prev.hand,
+          street: 'SHOWDOWN',
+        },
+      } satisfies GameState;
+    });
+  }, [updateGameState]);
+
   return {
     payoutResult,
     settleShowdown,
@@ -111,5 +186,7 @@ export const useGameMachine = () => {
     currentPhase,
     returnToTablePhase,
     returnToShowdownPhase,
+    previousPhaseAvailability,
+    goToPreviousPhase,
   };
 };
