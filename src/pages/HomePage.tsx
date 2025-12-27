@@ -76,8 +76,8 @@ export function HomePage({ description }: HomePageProps) {
           className={styles.card}
         >
           <p className={styles.lead}>
-            「新規開始」「再開」「リセット」の 3 操作を起点に、セットアップやテーブル表示へ進むホーム画面です。
-            まだロジックは仮ですが、導線の位置とトーンを固定しておきます。
+            「新規開始」「再開」「リセット」の 3 操作から、セットアップ→テーブル→ショーダウン→配当の流れへ進みます。
+            それぞれのボタンで次に移動するページと影響範囲を明示しました。
           </p>
           {hasCorruptedSave && (
             <div className={styles.warning} role="alert">
@@ -92,7 +92,7 @@ export function HomePage({ description }: HomePageProps) {
               新規ゲームを開始
             </Button>
             <Button variant="secondary" block onClick={handleResume} disabled={resumeDisabled}>
-              前回を再開（デモ）
+              前回を再開
             </Button>
             <Button variant="danger" block onClick={handleResetRequest}>
               リセット（全削除）
@@ -107,13 +107,13 @@ export function HomePage({ description }: HomePageProps) {
         <Card
           eyebrow="Progress"
           title="進行中のハンドに戻る"
-          description="保存データがある想定で、テーブルやログへ最短遷移できるショートカットをまとめています。"
+          description="保存データをもとに、テーブルやログへ最短遷移できるショートカットをまとめています。"
           className={styles.card}
         >
           <dl className={styles.metaList}>
             <div>
               <dt>ステータス</dt>
-              <dd className={styles.badge}>デモデータ</dd>
+              <dd className={styles.badge}>保存済み</dd>
             </div>
             <div>
               <dt>想定ハンド</dt>
@@ -144,26 +144,26 @@ export function HomePage({ description }: HomePageProps) {
       <Card
         eyebrow="Demo"
         title="ページ骨組みのショートカット"
-        description="各ページのモックに移動できます。HashRouter 配信のため、#/setup など直接入力でも安全にアクセスできます。"
+        description="セットアップから配当結果までの導線を一覧で確認できます。HashRouter 配信のため、#/setup など直接入力でも安全にアクセスできます。"
         className={styles.card}
       >
         <ul className={styles.pageList}>
           <li>
             <NavLink to="/setup" className={styles.pageLink}>
               <span className={styles.pageTitle}>セットアップ</span>
-              <span className={styles.pageDescription}>プレイヤー編集とブラインド設定の予定地</span>
+              <span className={styles.pageDescription}>プレイヤー編集とブラインド設定</span>
             </NavLink>
           </li>
           <li>
             <NavLink to="/table" className={styles.pageLink}>
               <span className={styles.pageTitle}>テーブル</span>
-              <span className={styles.pageDescription}>進行中ハンドを表示するメインビュー</span>
+              <span className={styles.pageDescription}>進行中ハンドの入力と確認</span>
             </NavLink>
           </li>
           <li>
             <NavLink to="/payout" className={styles.pageLink}>
               <span className={styles.pageTitle}>配当結果</span>
-              <span className={styles.pageDescription}>サイドポット配当の結果確認</span>
+              <span className={styles.pageDescription}>サイドポット配当の結果確認と次のハンドへ</span>
             </NavLink>
           </li>
           <li>
@@ -172,18 +172,16 @@ export function HomePage({ description }: HomePageProps) {
               <span className={styles.pageDescription}>保存/復元やリセット操作の入口</span>
             </NavLink>
           </li>
-          {isDev && (
-            <li>
-              <NavLink to="/preview" className={styles.pageLink}>
-                <span className={styles.pageTitle}>プレビュー</span>
-                <span className={styles.pageDescription}>ダミー状態を切り替えて各ページを確認</span>
-              </NavLink>
-            </li>
-          )}
-        </ul>
-        <p className={styles.note}>
-          いずれも UI 骨組みのみのプレースホルダーです。ルーティングと導線のトーンを先に整え、後続タスクで中身を差し込みます。
-        </p>
+            {isDev && (
+              <li>
+                <NavLink to="/preview" className={styles.pageLink}>
+                  <span className={styles.pageTitle}>プレビュー</span>
+                  <span className={styles.pageDescription}>開発用のダミー状態切り替え</span>
+                </NavLink>
+              </li>
+            )}
+          </ul>
+        <p className={styles.note}>セットアップ→テーブル→ショーダウン→配当→設定の順に確認できます。</p>
       </Card>
 
       <ConfirmDialog

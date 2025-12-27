@@ -26,7 +26,7 @@ export function PageScaffold({
   checkpoints,
   links = [],
   includeHomeLink = true,
-  footnote = 'このページは骨組みのプレースホルダーです。後続タスクでロジックやUIを追加します。',
+  footnote = 'ページの目的と完了条件を一覧できる共通レイアウトです。',
 }: PageScaffoldProps) {
   const navLinks = includeHomeLink ? [...links, { to: '/', label: 'ホームへ戻る' }] : links;
 

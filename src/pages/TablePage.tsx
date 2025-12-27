@@ -211,8 +211,8 @@ export function TablePage({ description }: TablePageProps) {
         </div>
         <p className={styles.lead}>{description}</p>
         <p className={styles.note}>
-          ステータスバー、中央のポット表示、下部の手番パネルを上下に固定したレイアウトデモです。横持ちでも中央が崩れ
-          ないよう余白を確保し、セットアップで入力した値をそのまま反映します。
+          ステータスバー、中央のポット表示、下部の手番パネルを上下に固定し、セットアップで入力した値をそのまま反映します。
+          手番の確認、アクション入力、ショートカットをこの画面から実行できます。
         </p>
       </header>
 
@@ -323,13 +323,12 @@ export function TablePage({ description }: TablePageProps) {
             </NavLink>
           </div>
           <p className={styles.actionNote}>
-            モーダルを開くとアクション候補とベット/レイズ時の金額入力UIが表示されます。ここでは見た目と導線のみを
-            固定しつつ、共有状態から値を受け取っています。ログ件数は現在 {hand.actionLog.length} 件で、Undo ボタンを
-            押すと直近 1 件を巻き戻します。
+            モーダルではアクション候補と金額入力をまとめて確認できます。ログ件数は現在 {hand.actionLog.length} 件で、Undo
+            ボタンを押すと直近 1 件を巻き戻します。ショーダウンやログへの導線もここに置いています。
           </p>
           <div className={styles.navLinks}>
             <Button variant="secondary" onClick={appendDemoLog}>
-              デモログを1件追加
+              確認用にログを1件追加
             </Button>
             <Button variant="secondary" onClick={() => navigate('/showdown')}>
               ショーダウンへ
