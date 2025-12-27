@@ -92,7 +92,7 @@ export function HomePage({ description }: HomePageProps) {
               新規ゲームを開始
             </Button>
             <Button variant="secondary" block onClick={handleResume} disabled={resumeDisabled}>
-              前回を再開
+              前回を再開（デモ）
             </Button>
             <Button variant="danger" block onClick={handleResetRequest}>
               リセット（全削除）
