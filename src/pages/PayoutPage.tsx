@@ -1,11 +1,9 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { PageShortcutBar } from '../components/PageShortcutBar';
-import { calcPayoutShares, distribute } from '../domain/distribution';
-import { buildPotBreakdown } from '../domain/pot';
-import type { Player, PotState, PotWinners } from '../domain/types';
+import { calcPayoutShares } from '../domain/distribution';
 import { useGameState } from '../state/GameStateContext';
 import { useGameMachine } from '../state/gameMachine';
 import styles from './PayoutPage.module.css';
@@ -22,20 +20,12 @@ type WinnerShare = {
   updatedStack: number;
 };
 
-type PotEntry = {
-  id: string;
-  label: string;
-  amount: number;
-  note: string;
-  winnerIds: string[];
-  eligiblePlayerIds: string[];
-};
-
 type PotResult = {
   id: string;
   label: string;
   amount: number;
   note: string;
+  eligibleCount: number;
   winners: WinnerShare[];
 };
 
@@ -48,40 +38,6 @@ type StackUpdate = {
   stackAfter: number;
   memo: string;
 };
-const demoPlayers: Player[] = [
-  { id: 'p1', name: '佐藤', seatIndex: 0, stack: 22300, state: 'ACTIVE' },
-  { id: 'p2', name: '鈴木', seatIndex: 1, stack: 17300, state: 'ACTIVE' },
-  { id: 'p3', name: '高橋', seatIndex: 2, stack: 27800, state: 'ACTIVE' },
-  { id: 'p4', name: '田中', seatIndex: 3, stack: 1800, state: 'ALL_IN' },
-  { id: 'p5', name: '伊藤', seatIndex: 4, stack: 7800, state: 'ACTIVE' },
-];
-
-const demoBreakdown: PotEntry[] = [
-  {
-    id: 'main',
-    label: 'メインポット',
-    amount: 8600,
-    note: 'リバーまで残った 5 名が対象。BB のトップペアがそのまま勝利しました。',
-    winnerIds: ['p3'],
-    eligiblePlayerIds: ['p1', 'p2', 'p3', 'p4', 'p5'],
-  },
-  {
-    id: 'side1',
-    label: 'サイドポット1',
-    amount: 4200,
-    note: 'ターンでのオールインにより 4 名が eligible。BTN / SB が同点で分配。',
-    winnerIds: ['p1', 'p2'],
-    eligiblePlayerIds: ['p1', 'p2', 'p3', 'p4'],
-  },
-  {
-    id: 'side2',
-    label: 'サイドポット2',
-    amount: 1800,
-    note: '田中のショートスタックが作ったサイド。BTN が単独で回収。',
-    winnerIds: ['p1'],
-    eligiblePlayerIds: ['p1', 'p2', 'p3'],
-  },
-];
 
 export function PayoutPage({ description }: PayoutPageProps) {
   const navigate = useNavigate();
@@ -89,9 +45,23 @@ export function PayoutPage({ description }: PayoutPageProps) {
   const { gameState, payoutResult, proceedToNextHand, currentPhase, previousPhaseAvailability, goToPreviousPhase } =
     useGameMachine();
 
+  useEffect(() => {
+    if (gameState && payoutResult) return;
+
+    if (previousPhaseAvailability.canReturn) {
+      goToPreviousPhase();
+      navigate(previousPhaseAvailability.targetPath);
+      return;
+    }
+
+    navigate('/table');
+  }, [gameState, payoutResult, goToPreviousPhase, navigate, previousPhaseAvailability]);
+
   const seatLabel = useMemo(() => {
-    const fallbackLabels = ['BTN', 'SB', 'BB', 'HJ', 'CO', 'UTG'];
-    if (!gameState) return (seatIndex: number) => fallbackLabels[seatIndex] ?? `Seat ${seatIndex + 1}`;
+    if (!gameState) {
+      return (seatIndex: number) => `Seat ${seatIndex + 1}`;
+    }
+
     return (seatIndex: number) => {
       if (seatIndex === gameState.hand.dealerIndex) return 'BTN';
       if (seatIndex === gameState.hand.sbIndex) return 'SB';
@@ -101,24 +71,16 @@ export function PayoutPage({ description }: PayoutPageProps) {
   }, [gameState]);
 
   const view = useMemo(() => {
-    const players = gameState?.players ?? demoPlayers;
+    if (!gameState || !payoutResult) return null;
 
-    const dealerIndex = payoutResult?.dealerIndex ?? gameState?.hand.dealerIndex ?? 0;
-    const potState: PotState = payoutResult?.pot ?? {
-      main: demoBreakdown[0]?.amount ?? 0,
-      sides: demoBreakdown.slice(1).map((pot) => ({ amount: pot.amount, eligiblePlayerIds: pot.eligiblePlayerIds })),
-    };
-    const winners: PotWinners = payoutResult?.winners ?? {
-      main: demoBreakdown[0]?.winnerIds ?? [],
-      sides: demoBreakdown.slice(1).map((pot) => pot.winnerIds),
-    };
+    const players = gameState.players;
+    const dealerIndex = payoutResult.dealerIndex;
+    const potState = payoutResult.pot;
+    const winners = payoutResult.winners;
 
-    const payouts = payoutResult?.payouts ?? distribute(players, dealerIndex, potState, winners);
+    const payouts = payoutResult.payouts;
 
-    const breakdown = payoutResult?.breakdown ?? buildPotBreakdown(players, {
-      potStateOverride: potState,
-      eligibleMainPlayerIds: players.map((p) => p.id),
-    }).breakdown;
+    const breakdown = payoutResult.breakdown;
 
     const potResults: PotResult[] = breakdown.map((pot, index) => {
       const winnerIds = pot.id === 'main' ? winners.main : winners.sides[index - 1] ?? [];
@@ -138,18 +100,19 @@ export function PayoutPage({ description }: PayoutPageProps) {
         };
       });
 
-      const fallbackNote = payoutResult ? null : demoBreakdown.find((demo) => demo.id === pot.id)?.note;
+      const eligibleCount =
+        pot.id === 'main'
+          ? pot.eligiblePlayerIds.length
+          : potState.sides[index - 1]?.eligiblePlayerIds.length ?? 0;
       return {
         id: pot.id,
         label: pot.label,
         amount: pot.amount,
         note:
-          fallbackNote ??
-          ((potState.sides[index - 1]?.eligiblePlayerIds.length ?? pot.eligiblePlayerIds.length) === 0
+          eligibleCount === 0
             ? 'eligible が存在しません'
-            : pot.id === 'main'
-              ? `${pot.eligiblePlayerIds.length} 名が対象です。`
-              : `${pot.eligiblePlayerIds.length} 名が eligible です。`),
+            : `${eligibleCount} 名が eligible、${winnersWithShare.length} 名に配当します。`,
+        eligibleCount,
         winners: winnersWithShare,
       };
     });
@@ -183,10 +146,18 @@ export function PayoutPage({ description }: PayoutPageProps) {
 
     const totalPayout = breakdown.reduce((sum, pot) => sum + pot.amount, 0);
 
-    return { potResults, stackUpdates, highlightWinners, totalPayout };
+    const sidePotCount = potResults.filter((pot) => pot.id !== 'main').length;
+    const totalWinners = potResults.reduce((acc, pot) => {
+      pot.winners.forEach((winner) => acc.add(winner.playerId));
+      return acc;
+    }, new Set<string>()).size;
+
+    return { potResults, stackUpdates, highlightWinners, totalPayout, sidePotCount, totalWinners };
   }, [gameState, payoutResult, seatLabel]);
 
-  const { potResults, stackUpdates, highlightWinners, totalPayout } = view;
+  if (!view) return null;
+
+  const { potResults, stackUpdates, highlightWinners, totalPayout, sidePotCount, totalWinners } = view;
   const previousPhaseLabel =
     previousPhaseAvailability.targetPath === '/showdown' ? '/showdown に戻ります' : '/table に戻ります';
 
@@ -204,8 +175,8 @@ export function PayoutPage({ description }: PayoutPageProps) {
         </div>
         <p className={styles.lead}>{description}</p>
         <p className={styles.note}>
-          ハンド終了後にポットを再計算し、勝者ごとの獲得額とスタック更新を確認する静的レイアウトです。メイン / サイド
-          ポットの内訳と、次のハンドへ進むための導線を並べています。
+          ハンド終了後に確定した配当結果を表示します。ショーダウンで決まった勝者とポット計算の結果のみを利用し、次の
+          ハンドへ進むための導線を並べています。
         </p>
       </header>
 
@@ -237,20 +208,20 @@ export function PayoutPage({ description }: PayoutPageProps) {
       />
 
       <div className={styles.heroGrid}>
-        <Card
-          eyebrow="Summary"
-          title="配当サマリ"
-          description="メイン / サイドポットの合計と、主要勝者の獲得額をまとめています。"
-        >
+          <Card
+            eyebrow="Summary"
+            title="配当サマリ"
+            description="メイン / サイドポットの合計と、上位勝者の獲得額をまとめています。"
+          >
           <div className={styles.summaryGrid}>
             <div className={styles.totalBox}>
               <p className={styles.totalLabel}>総配当</p>
               <p className={styles.totalValue}>{totalPayout.toLocaleString()} pt</p>
-              <p className={styles.totalMeta}>メイン + サイドの合計。配当計算の結果をこの領域に集約します。</p>
+              <p className={styles.totalMeta}>メイン + サイドの合計。ショーダウンの結果を反映した配当のみを表示します。</p>
               <div className={styles.totalTags}>
                 <span className={styles.badge}>メイン 1 本</span>
-                <span className={styles.badge}>サイド 2 本</span>
-                <span className={styles.badge}>同点配分あり</span>
+                <span className={styles.badge}>{sidePotCount > 0 ? `サイド ${sidePotCount} 本` : 'サイドなし'}</span>
+                <span className={styles.badge}>勝者 {totalWinners} 名</span>
               </div>
             </div>
             <div className={styles.highlightList} aria-label="主な勝者">
@@ -268,56 +239,50 @@ export function PayoutPage({ description }: PayoutPageProps) {
           </div>
         </Card>
 
-        <Card
-          eyebrow="Next Step"
-          title="次のハンドへの導線"
-          description="配当確定後に実行する操作をまとめています。"
-        >
-          <div className={styles.actionStack}>
-            <div className={styles.inlineInfo}>
-              <span className={styles.badge}>スタック反映済み</span>
-              <span className={styles.badge}>Undo 導線あり</span>
-            </div>
-            <p className={styles.actionBody}>
-              配当計算を反映した後、ブラインド徴収とボタン移動を行い /table に戻ります。ショーダウンに戻る導線も
-              用意しています。
-            </p>
-            <div className={styles.buttonRow}>
-              <Button
-                variant="secondary"
-                block
-                onClick={() => {
-                  if (!previousPhaseAvailability.canReturn) return;
-                  if (!gameState) {
-                    window.location.hash = '#/showdown';
-                    return;
+            <Card
+              eyebrow="Next Step"
+              title="次のハンドへの導線"
+              description="配当確定後に実行する操作をまとめています。状態マシンに沿ってショーダウンへ戻ることもできます。"
+            >
+            <div className={styles.actionStack}>
+              <div className={styles.inlineInfo}>
+                <span className={styles.badge}>スタック反映済み</span>
+                <span className={styles.badge}>Undo 導線あり</span>
+              </div>
+              <p className={styles.actionBody}>
+                配当計算を反映した状態で、必要に応じてショーダウンに戻るか、ブラインド徴収とボタン移動を行って次の
+                ハンドに進みます。
+              </p>
+              <div className={styles.buttonRow}>
+                <Button
+                  variant="secondary"
+                  block
+                  onClick={() => {
+                    if (!previousPhaseAvailability.canReturn) return;
+                    goToPreviousPhase();
+                    navigate(previousPhaseAvailability.targetPath);
+                  }}
+                  disabled={!previousPhaseAvailability.canReturn}
+                  title={
+                    previousPhaseAvailability.canReturn
+                      ? previousPhaseLabel
+                      : previousPhaseAvailability.reason ?? '前フェーズに戻れません'
                   }
-                  goToPreviousPhase();
-                }}
-                disabled={!previousPhaseAvailability.canReturn}
-                title={
-                  previousPhaseAvailability.canReturn
-                    ? previousPhaseLabel
-                    : previousPhaseAvailability.reason ?? '前フェーズに戻れません'
-                }
-              >
-                前フェーズへ戻る
-              </Button>
-              <Button
-                variant="primary"
-                block
-                onClick={() => {
-                  if (!gameState) {
-                    window.location.hash = '#/table';
-                    return;
-                  }
-                  proceedToNextHand();
-                }}
-                disabled={currentPhase !== 'PAYOUT'}
-              >
-                次へ
-              </Button>
-            </div>
+                >
+                  前フェーズへ戻る
+                </Button>
+                <Button
+                  variant="primary"
+                  block
+                  onClick={() => {
+                    proceedToNextHand();
+                    navigate('/table');
+                  }}
+                  disabled={currentPhase !== 'PAYOUT'}
+                >
+                  次へ
+                </Button>
+              </div>
             {!previousPhaseAvailability.canReturn && previousPhaseAvailability.reason && (
               <p className={styles.hint}>{previousPhaseAvailability.reason}</p>
             )}
@@ -329,7 +294,7 @@ export function PayoutPage({ description }: PayoutPageProps) {
       <Card
         eyebrow="Breakdown"
         title="ポットごとの配当内訳"
-        description="メイン / サイドポットの金額と勝者を一覧する静的なレイアウトです。"
+        description="メイン / サイドポットの金額と勝者を、計算済みの結果に基づいて一覧します。"
       >
         <div className={styles.potGrid}>
           {potResults.map((pot) => (
@@ -343,7 +308,7 @@ export function PayoutPage({ description }: PayoutPageProps) {
                 </div>
                 <div className={styles.potBadges}>
                   <span className={styles.badge}>勝者 {pot.winners.length} 名</span>
-                  <span className={styles.badge}>再計算済み</span>
+                  <span className={styles.badge}>eligible {pot.eligibleCount} 名</span>
                 </div>
               </div>
               <p className={styles.potNote}>{pot.note}</p>
@@ -367,7 +332,7 @@ export function PayoutPage({ description }: PayoutPageProps) {
       <Card
         eyebrow="Stacks"
         title="スタック更新の確認"
-        description="配当結果を反映した後の各プレイヤーのスタックとメモをまとめています。"
+        description="配当結果を反映した後の各プレイヤーのスタックとメモを確認できます。"
       >
         <div className={styles.stackList}>
           {stackUpdates.map((player) => (
