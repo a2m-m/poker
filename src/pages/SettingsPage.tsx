@@ -92,8 +92,8 @@ export function SettingsPage({ description }: SettingsPageProps) {
         : '保存済みデータを破棄しますか？',
     message:
       dialogType === 'reset'
-        ? '表示設定と保存済みのスナップショットをすべて初期状態に戻します。後続タスクで永続化を実装する前提のダミー動作です。'
-        : 'ローカル保存のデモデータを削除します。復元ボタンでは取り戻せなくなります。',
+        ? '表示設定と保存済みのスナップショットをすべて初期状態に戻します。復元では戻せない操作です。'
+        : 'ローカル保存のデータを削除します。復元ボタンでは取り戻せなくなります。',
   };
 
   return (
@@ -102,7 +102,7 @@ export function SettingsPage({ description }: SettingsPageProps) {
         <h2 className={styles.sectionTitle}>設定</h2>
         <p className={styles.lead}>{description}</p>
         <p className={styles.note}>
-          端数処理やバーンカード表示など、配当と見た目に関わるオプションをまとめています。保存/復元は後続タスクで本実装するため、ここでは導線と確認ダイアログの流れを固定します。
+          端数処理やバーンカード表示など、配当と見た目に関わるオプションをまとめています。保存/復元の導線と確認ダイアログの流れをここで固定し、ハンド進行中でも迷わず変更できるようにしています。
         </p>
       </div>
 
@@ -195,12 +195,12 @@ export function SettingsPage({ description }: SettingsPageProps) {
                     checked={autoSaveEnabled}
                     onChange={(event) => setAutoSaveEnabled(event.target.checked)}
                   />
-                  <span className={styles.checkboxText}>手番確定ごとにローカル保存する（デモ）</span>
+                  <span className={styles.checkboxText}>手番確定ごとにローカル保存する</span>
                 </label>
                 <span className={styles.badge}>{autoSaveEnabled ? '保存ON' : '保存OFF'}</span>
               </div>
               <p className={styles.helper}>
-                チェックボックスは UI 配置のデモです。後続タスクで永続化と同期処理を実装し、確認ダイアログ経由で危険操作を防ぎます。
+                チェックボックスの切り替えで保存タイミングを決められる想定です。危険な操作は確認ダイアログを経由させてください。
               </p>
             </div>
 
@@ -227,13 +227,13 @@ export function SettingsPage({ description }: SettingsPageProps) {
               <p className={styles.fieldLabel}>保存/復元のシミュレーション</p>
               <div className={styles.inlineActions}>
                 <Button variant="primary" onClick={handleSave}>
-                  現在の設定を保存（ダミー）
+                  現在の設定を保存
                 </Button>
                 <Button variant="secondary" onClick={handleRestore}>
-                  保存済みを復元（ダミー）
+                  保存済みを復元
                 </Button>
               </div>
-              <p className={styles.helper}>保存キーや永続化タイミングは後続の「ローカル保存キー設計」タスクで確定します。</p>
+              <p className={styles.helper}>保存キーや永続化タイミングは別途のローカル保存設計に合わせて切り替えます。</p>
               <div className={styles.statusList}>
                 <div className={styles.statusItem}>
                   <p className={styles.statusLabel}>保存済み</p>
@@ -249,7 +249,7 @@ export function SettingsPage({ description }: SettingsPageProps) {
             <div className={styles.fieldGroup}>
               <p className={styles.fieldLabel}>危険操作</p>
               <p className={styles.helper}>
-                保存データの破棄や全リセットは ConfirmDialog を経由させ、意図しない操作を防ぎます。テキストは後続で実際のハンド状態に合わせて調整します。
+                保存データの破棄や全リセットは ConfirmDialog を経由させ、意図しない操作を防ぎます。実際のハンド状態に合わせて文言を調整してください。
               </p>
               <div className={styles.dangerZone}>
                 <Button variant="danger" onClick={() => openDialog('discard')}>

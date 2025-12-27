@@ -103,7 +103,10 @@ export function SetupPage({ description }: SetupPageProps) {
       <div className={styles.header}>
         <h2 className={styles.sectionTitle}>セットアップ</h2>
         <p className={styles.lead}>{description}</p>
-        <p className={styles.note}>プレイヤー編集とブラインド設定の入力枠を仮配置しています。保存や検証は後続で実装します。</p>
+        <p className={styles.note}>
+          プレイヤーの人数・席順・持ち点、SB/BB/アンティをここで整え、テーブルでそのまま進行できる状態にします。
+          入力した内容は開始ボタンで GameState に反映されます。
+        </p>
       </div>
 
       <div className={styles.grid}>
@@ -206,19 +209,19 @@ export function SetupPage({ description }: SetupPageProps) {
                 末尾に追加
               </Button>
             </div>
-            <p className={styles.note}>削除と並び替えは即時反映されます。保存や重複名チェックは今後のタスクで行います。</p>
+            <p className={styles.note}>削除と並び替えは即時反映されます。人数と席順を決めてからブラインド設定に進んでください。</p>
           </div>
         </Card>
 
-        <Card
-          eyebrow="Blinds"
-          title="ブラインドと設定"
-          description="SB/BB やアンティを指定する枠です。数値入力の UI のみを仮配置しています。"
-        >
-          <div className={styles.cardBody}>
-            <p className={styles.sectionDescription}>
-              SB &lt; BB を推奨し、整数で入力します。設定値の検証や反映は後続タスクで実装します。
-            </p>
+      <Card
+        eyebrow="Blinds"
+        title="ブラインドと設定"
+        description="SB/BB やアンティを指定する枠です。ここで決めた値がテーブルの必要額やターン表示に反映されます。"
+      >
+        <div className={styles.cardBody}>
+          <p className={styles.sectionDescription}>
+            SB &lt; BB を推奨し、整数で入力します。開始後はステータスバーやターンパネルにそのまま反映されます。
+          </p>
             <div className={styles.fieldGrid}>
               <label className={styles.label}>
                 スモールブラインド
@@ -251,9 +254,9 @@ export function SetupPage({ description }: SetupPageProps) {
                 />
               </label>
             </div>
-            <p className={styles.note}>後続で localStorage への保存や、開始時に GameState を生成する処理につなぎます。</p>
-          </div>
-        </Card>
+          <p className={styles.note}>入力中もリアルタイムで値を保持し、開始ボタンでテーブルに適用します。</p>
+        </div>
+      </Card>
       </div>
 
       <Card eyebrow="Start" title="開始の確認" description="人数とブラインドの準備が整ったらテーブルへ進みます。">

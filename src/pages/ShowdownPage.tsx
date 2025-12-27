@@ -222,7 +222,7 @@ export function ShowdownPage({ description }: ShowdownPageProps) {
             </div>
             <p className={styles.actionBody}>
               下のポットカードで勝者候補をチェックすると、同点配分や対象外プレイヤーの扱いを確認できます。
-              ConfirmDialog での確認を想定しつつ、このデモでは直接 /payout に遷移します。
+              ConfirmDialog での確認を想定しつつ、この画面ではそのまま /payout に遷移して配当を確定します。
             </p>
             <div className={styles.buttonRow}>
               <Button

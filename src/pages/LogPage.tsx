@@ -263,7 +263,7 @@ export function LogPage({ description, entries }: LogPageProps) {
           <dl className={styles.metaList}>
             <div>
               <dt>対象ハンド</dt>
-              <dd>#12（デモ）</dd>
+              <dd>#12 / 進行中</dd>
             </div>
             <div>
               <dt>ストリート</dt>

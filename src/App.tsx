@@ -30,44 +30,44 @@ const basePages: PageInfo[] = [
   {
     path: '/',
     title: 'ホーム',
-    description: 'アプリの概要と導線の起点になります。',
-    element: <HomePage description="アプリの概要と導線の起点になります。" />,
+    description: '新規開始・再開・リセットの起点となるトップページです。',
+    element: <HomePage description="新規開始・再開・リセットの起点となるトップページです。" />,
   },
   {
     path: '/setup',
     title: 'セットアップ',
-    description: 'プレイヤーや設定の編集を行うページの予定地です。',
-    element: <SetupPage description="プレイヤーや設定の編集を行うページの予定地です。" />,
+    description: 'プレイヤーとブラインドを設定し、テーブルへ進む準備を整えます。',
+    element: <SetupPage description="プレイヤーとブラインドを設定し、テーブルへ進む準備を整えます。" />,
   },
   {
     path: '/table',
     title: 'テーブル',
-    description: '進行中のハンドを表示するメインビューのレイアウトデモです。',
-    element: <TablePage description="進行中のハンドを表示するメインビューのレイアウトデモです。" />,
+    description: '進行中のハンドを確認し、アクションを入力するメインビューです。',
+    element: <TablePage description="進行中のハンドを確認し、アクションを入力するメインビューです。" />,
   },
   {
     path: '/showdown',
     title: 'ショーダウン',
-    description: 'メイン/サイドポットごとに勝者を選ぶレイアウトデモです。',
-    element: <ShowdownPage description="メイン/サイドポットごとに勝者を選ぶレイアウトデモです。" />,
+    description: 'メイン/サイドポットごとに勝者を選び、配当に進む前の確認を行います。',
+    element: <ShowdownPage description="メイン/サイドポットごとに勝者を選び、配当に進む前の確認を行います。" />,
   },
   {
     path: '/payout',
     title: '配当結果',
-    description: 'メイン/サイドポットの配当結果を確認するダミー UI です。',
-    element: <PayoutPage description="メイン/サイドポットの配当結果を確認するダミー UI です。" />,
+    description: '各ポットの配当結果とスタック更新を一覧し、次のハンドへ進む導線をまとめます。',
+    element: <PayoutPage description="各ポットの配当結果とスタック更新を一覧し、次のハンドへ進む導線をまとめます。" />,
   },
   {
     path: '/log',
     title: 'ログ',
-    description: 'アクション履歴を一覧する画面の予定地です。',
-    element: <LogPage description="アクション履歴を一覧する画面の予定地です。" />,
+    description: 'アクション履歴を時系列で確認し、直前の入力を振り返ります。',
+    element: <LogPage description="アクション履歴を時系列で確認し、直前の入力を振り返ります。" />,
   },
   {
     path: '/settings',
     title: '設定',
-    description: '保存/復元や表示設定を扱う画面の予定地です。',
-    element: <SettingsPage description="保存/復元や表示設定を扱う画面の予定地です。" />,
+    description: '保存/復元や表示オプションを調整し、ハンド進行に影響する設定を管理します。',
+    element: <SettingsPage description="保存/復元や表示オプションを調整し、ハンド進行に影響する設定を管理します。" />,
   },
 ];
 
@@ -101,7 +101,7 @@ const AppNav = () => {
       as="nav"
       eyebrow="Routing"
       title="主要ルート"
-      description="各ページのプレースホルダーに移動できます。"
+      description="新規開始から配当までの各ページに移動できます。"
       aria-label="アプリ内ルート一覧"
     >
       <ul className="app__nav-list">
