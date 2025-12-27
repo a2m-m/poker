@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { ActionLogEntry, ActionType, Street } from '../domain/types';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
+import { PageShortcutBar } from '../components/PageShortcutBar';
 import { useGameState } from '../state/GameStateContext';
 import styles from './LogPage.module.css';
 
@@ -183,7 +184,7 @@ const toDisplayEntries = (
 
 export function LogPage({ description, entries }: LogPageProps) {
   const navigate = useNavigate();
-  const { gameState } = useGameState();
+  const { gameState, clearGameState } = useGameState();
 
   const logs = useMemo(() => {
     if (entries) return entries;
@@ -200,6 +201,11 @@ export function LogPage({ description, entries }: LogPageProps) {
       totalActions: logs.length,
     };
   }, [logs]);
+
+  const handleDiscardHand = () => {
+    clearGameState();
+    navigate('/setup');
+  };
 
   return (
     <div className={styles.page}>
@@ -224,6 +230,29 @@ export function LogPage({ description, entries }: LogPageProps) {
           </NavLink>
         </div>
       </header>
+
+      <PageShortcutBar
+        actions={[
+          {
+            label: 'ホームへ戻る',
+            description: 'ホームに戻って導線を再確認します。',
+            onClick: () => navigate('/'),
+            variant: 'secondary',
+          },
+          {
+            label: '手番確認に戻る',
+            description: '/table へ移動し、現在のハンドを確認します。',
+            onClick: () => navigate('/table'),
+            variant: 'undo',
+          },
+          {
+            label: 'このハンドを破棄',
+            description: '履歴を破棄して /setup からやり直します。',
+            onClick: handleDiscardHand,
+            variant: 'danger',
+          },
+        ]}
+      />
 
       <div className={styles.grid}>
         <Card

@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { PageShortcutBar } from '../components/PageShortcutBar';
 import { useToast } from '../components/Toast';
 import { useGameState } from '../state/GameStateContext';
 import styles from './SettingsPage.module.css';
@@ -14,6 +16,7 @@ type DialogType = 'none' | 'discard' | 'reset';
 type RoundingMode = 'floor' | 'ceil' | 'nearest';
 
 export function SettingsPage({ description }: SettingsPageProps) {
+  const navigate = useNavigate();
   const [roundingMode, setRoundingMode] = useState<RoundingMode>('floor');
   const [showBurnCards, setShowBurnCards] = useState(true);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
@@ -102,6 +105,28 @@ export function SettingsPage({ description }: SettingsPageProps) {
           端数処理やバーンカード表示など、配当と見た目に関わるオプションをまとめています。保存/復元は後続タスクで本実装するため、ここでは導線と確認ダイアログの流れを固定します。
         </p>
       </div>
+
+      <PageShortcutBar
+        actions={[
+          {
+            label: 'ホームへ戻る',
+            description: 'ホームに戻って導線一覧を確認します。',
+            onClick: () => navigate('/'),
+          },
+          {
+            label: '手番確認に戻る',
+            description: '/table へ移動し、現在のハンド状況を確認します。',
+            onClick: () => navigate('/table'),
+            variant: 'undo',
+          },
+          {
+            label: 'このハンドを破棄',
+            description: '保存データ破棄の確認ダイアログを開きます。',
+            onClick: () => openDialog('discard'),
+            variant: 'danger',
+          },
+        ]}
+      />
 
       <div className={styles.grid}>
         <Card

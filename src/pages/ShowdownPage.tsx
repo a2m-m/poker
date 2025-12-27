@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
+import { PageShortcutBar } from '../components/PageShortcutBar';
 import { buildPotBreakdown, buildPotWinnersFromSelection } from '../domain/pot';
 import type { Player, PotBreakdown, PotState } from '../domain/types';
 import { useGameState } from '../state/GameStateContext';
@@ -62,8 +64,9 @@ const attachNotes = (pots: PotBreakdown[]): PotEntry[] =>
   }));
 
 export function ShowdownPage({ description }: ShowdownPageProps) {
-  const { gameState } = useGameState();
-  const { settleShowdown, returnToTablePhase, currentPhase } = useGameMachine();
+  const navigate = useNavigate();
+  const { gameState, clearGameState } = useGameState();
+  const { settleShowdown, currentPhase, previousPhaseAvailability, goToPreviousPhase } = useGameMachine();
 
   const seatLabel = useMemo(() => {
     if (!gameState) return (seatIndex: number) => demoSeatLabels[demoPlayers[seatIndex]?.id] ?? `Seat ${seatIndex + 1}`;
@@ -127,6 +130,14 @@ export function ShowdownPage({ description }: ShowdownPageProps) {
     setSelectedWinners(Object.fromEntries(potEntries.map((pot) => [pot.id, pot.eligiblePlayerIds.slice(0, 1)])));
   };
 
+  const previousPhaseLabel =
+    previousPhaseAvailability.targetPath === '/table' ? '/table に戻ります' : '/showdown に戻ります';
+
+  const handleDiscardHand = () => {
+    clearGameState();
+    navigate('/setup');
+  };
+
   return (
     <div className={styles.page}>
       <header className={styles.header}>
@@ -140,6 +151,33 @@ export function ShowdownPage({ description }: ShowdownPageProps) {
           同点時の複数選択も視覚化しています。
         </p>
       </header>
+
+      <PageShortcutBar
+        actions={[
+          {
+            label: 'ホームへ戻る',
+            description: 'ホームに戻り、導線一覧を再確認します。',
+            onClick: () => navigate('/'),
+            variant: 'secondary',
+          },
+          {
+            label: 'このハンドを破棄',
+            description: '現在のハンドを破棄し、セットアップに戻ります。',
+            onClick: handleDiscardHand,
+            variant: 'danger',
+          },
+          {
+            label: '前フェーズへ戻る',
+            description: previousPhaseAvailability.canReturn
+              ? `${previousPhaseLabel}（戻り先のパスを明示します）`
+              : 'ショーダウン以前の状態に戻せません。',
+            onClick: goToPreviousPhase,
+            variant: 'undo',
+            disabled: !previousPhaseAvailability.canReturn,
+            disabledReason: previousPhaseAvailability.reason,
+          },
+        ]}
+      />
 
       <div className={styles.heroGrid}>
         <Card
@@ -191,14 +229,21 @@ export function ShowdownPage({ description }: ShowdownPageProps) {
                 variant="secondary"
                 block
                 onClick={() => {
+                  if (!previousPhaseAvailability.canReturn) return;
                   if (!gameState) {
                     window.location.hash = '#/table';
                     return;
                   }
-                  returnToTablePhase();
+                  goToPreviousPhase();
                 }}
+                disabled={!previousPhaseAvailability.canReturn}
+                title={
+                  previousPhaseAvailability.canReturn
+                    ? previousPhaseLabel
+                    : previousPhaseAvailability.reason ?? '前フェーズに戻れません'
+                }
               >
-                戻る
+                前フェーズへ戻る
               </Button>
               <Button variant="primary" block onClick={handleConfirm} disabled={currentPhase === 'PAYOUT'}>
                 次へ
@@ -207,6 +252,9 @@ export function ShowdownPage({ description }: ShowdownPageProps) {
                 選択をリセット
               </Button>
             </div>
+            {!previousPhaseAvailability.canReturn && previousPhaseAvailability.reason && (
+              <p className={styles.hint}>{previousPhaseAvailability.reason}</p>
+            )}
             <p className={styles.hint}>選択内容はポット別に保持され、eligible 外はチェック不可です。</p>
           </div>
         </Card>

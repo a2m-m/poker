@@ -4,6 +4,7 @@ import { ActionModal } from '../components/ActionModal';
 import { ActionBar } from '../components/ActionBar';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
+import { PageShortcutBar } from '../components/PageShortcutBar';
 import { PotPanel } from '../components/PotPanel';
 import { PlayerCard, type PlayerStatus } from '../components/PlayerCard';
 import { StatusBar } from '../components/StatusBar';
@@ -32,10 +33,10 @@ const cloneHandState = (hand: HandState): HandState => JSON.parse(JSON.stringify
 
 export function TablePage({ description }: TablePageProps) {
   const navigate = useNavigate();
-  const { gameState, updateGameState } = useGameState();
+  const { gameState, updateGameState, clearGameState } = useGameState();
   const [actionModalOpen, setActionModalOpen] = useState(false);
   const { pushToast } = useToast();
-  const { goToShowdown, returnToTablePhase, currentPhase } = useGameMachine();
+  const { goToShowdown, previousPhaseAvailability, goToPreviousPhase } = useGameMachine();
 
   if (!gameState) {
     return (
@@ -78,6 +79,7 @@ export function TablePage({ description }: TablePageProps) {
   const turnContribution = turnPlayer ? hand.contribThisStreet[turnPlayer.id] ?? 0 : 0;
   const maxReachableAmount = turnPlayer ? turnContribution + turnPlayer.stack : 0;
   const availableActions = turnPlayer ? describeActionAvailability(hand, turnPlayer) : [];
+  const previousPhaseLabel = previousPhaseAvailability.targetPath === '/table' ? '/table に戻ります' : '/showdown に戻ります';
 
   const appendDemoLog = () => {
     updateGameState((prev) => {
@@ -188,6 +190,18 @@ export function TablePage({ description }: TablePageProps) {
     setActionModalOpen(false);
   };
 
+  const handleDiscardHand = () => {
+    clearGameState();
+    pushToast({
+      title: 'ハンドを破棄しました',
+      description: 'セットアップに戻り、新しいハンドを開始できます。',
+      variant: 'warning',
+      actionLabel: 'セットアップへ移動',
+      onAction: () => navigate('/setup'),
+    });
+    navigate('/setup');
+  };
+
   return (
     <div className={styles.page}>
       <header className={styles.header}>
@@ -201,6 +215,33 @@ export function TablePage({ description }: TablePageProps) {
           ないよう余白を確保し、セットアップで入力した値をそのまま反映します。
         </p>
       </header>
+
+      <PageShortcutBar
+        actions={[
+          {
+            label: 'ホームへ戻る',
+            description: 'ホームに戻り、各ページの導線を確認します。',
+            onClick: () => navigate('/'),
+            variant: 'secondary',
+          },
+          {
+            label: 'このハンドを破棄',
+            description: '現在のハンドを破棄し、/setup に戻ります。',
+            onClick: handleDiscardHand,
+            variant: 'danger',
+          },
+          {
+            label: '前フェーズへ戻る',
+            description: previousPhaseAvailability.canReturn
+              ? `${previousPhaseLabel}（状態マシンが遷移を管理します）`
+              : '現在は前フェーズに戻れません。',
+            onClick: goToPreviousPhase,
+            variant: 'undo',
+            disabled: !previousPhaseAvailability.canReturn,
+            disabledReason: previousPhaseAvailability.reason,
+          },
+        ]}
+      />
 
       <section className={styles.tableFrame} aria-label="テーブルレイアウト">
         <div className={styles.statusRow}>
@@ -259,16 +300,20 @@ export function TablePage({ description }: TablePageProps) {
           />
           <div className={styles.navLinks}>
             <Button
-              variant="secondary"
-              onClick={returnToTablePhase}
-              disabled={!gameState || currentPhase !== 'TABLE'}
+              variant="undo"
+              onClick={goToPreviousPhase}
+              disabled={!previousPhaseAvailability.canReturn}
+              title={previousPhaseAvailability.canReturn ? previousPhaseLabel : '前フェーズに戻れません'}
             >
-              戻る
+              前フェーズに戻る
             </Button>
             <Button variant="primary" onClick={goToShowdown} disabled={!gameState}>
               次へ
             </Button>
           </div>
+          {!previousPhaseAvailability.canReturn && previousPhaseAvailability.reason && (
+            <p className={styles.actionNote}>{previousPhaseAvailability.reason}</p>
+          )}
           <div className={styles.navLinks}>
             <NavLink to="/log" className={styles.textLink}>
               /log に移動して履歴を一覧
